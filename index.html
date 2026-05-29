@@ -9,15 +9,15 @@
 <body>
     <!-- UI Elements - Outside Canvas -->
     <div id="ui-container">
-        <div id="score-display">Score: <span id="score-value">0</span> <span class="score-note">(10 pts per coin)</span></div>
-        <div id="coins-display">🪙 Coins: <span id="coins-value">0</span></div>
-        <div id="lives-display">❤️ Lives: <span id="lives-value">3</span></div>
-        <div id="level-display">Level: <span id="level-value">1</span></div>
-        <div id="happy-bar-container">
-            <div id="happy-bar-label">Happy</div>
-            <div id="happy-bar">
-                <div id="happy-bar-fill"></div>
-            </div>
+        <div id="ui-primary">
+            <div id="lives-display">❤️ <span id="lives-value">3</span></div>
+            <div id="treats-display">🐟 <span id="treats-value">0</span>/<span id="treats-needed">5</span></div>
+            <div id="score-display">⭐ <span id="score-value">0</span></div>
+        </div>
+        <div id="ui-secondary">
+            <div id="timer-display">⏱️ <span id="timer-value">30</span>s</div>
+            <div id="level-display">Lv.<span id="level-value">1</span></div>
+            <div id="coins-display">🪙 <span id="coins-value">0</span></div>
         </div>
     </div>
     
@@ -27,21 +27,16 @@
         <!-- Start Screen -->
         <div id="start-screen" class="screen" style="display: flex;">
             <div class="start-content">
-                <h1>🐱 Cat Dash! 🐱</h1>
-                <div class="game-theme">
-                    <p class="theme-text">Help your cat find the right place to poop! 🚽</p>
-                </div>
+                <h1>🐱 Cat Rush! 🐱</h1>
+                <p class="theme-text">Help your cat find the bathroom! 🚽</p>
                 <div class="start-instructions">
-                    <h2>How to Play</h2>
-                    <ul>
-                        <li><strong>Arrow Keys or WASD</strong> - Move your cat</li>
-                        <li><strong>Collect Fish 🐟</strong> - Fill your happy meter</li>
-                        <li><strong>Collect Coins 🪙</strong> - Earn 10 points each</li>
-                        <li><strong>Collect Shields 🛡️</strong> - Protect from obstacles</li>
-                    </ul>
-                    <p class="tip">💡 When happy meter is full, the bathroom appears! Reach it to complete the level.</p>
+                    <p>🐟 Collect treats to reveal the bathroom</p>
+                    <p>🪙 Grab coins for future rewards</p>
+                    <p>🛡️ Shields protect you from obstacles</p>
+                    <p>⚡ 3+ items quickly = 1.5x combo!</p>
+                    <p class="controls">Move: Arrow Keys / WASD</p>
                 </div>
-                <button id="start-button">Play</button>
+                <button id="start-button">Start Game</button>
             </div>
         </div>
 
