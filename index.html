@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Dash! - Chibi Cat Racing Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- UI Elements - Outside Canvas -->
+    <div id="ui-container">
+        <div id="score-display">Score: <span id="score-value">0</span> <span class="score-note">(10 pts per coin)</span></div>
+        <div id="coins-display">🪙 Coins: <span id="coins-value">0</span></div>
+        <div id="lives-display">❤️ Lives: <span id="lives-value">3</span></div>
+        <div id="level-display">Level: <span id="level-value">1</span></div>
+        <div id="happy-bar-container">
+            <div id="happy-bar-label">Happy</div>
+            <div id="happy-bar">
+                <div id="happy-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen" style="display: flex;">
+            <div class="start-content">
+                <h1>🐱 Cat Dash! 🐱</h1>
+                <div class="game-theme">
+                    <p class="theme-text">Help your cat find the right place to poop! 🚽</p>
+                </div>
+                <div class="start-instructions">
+                    <h2>How to Play</h2>
+                    <ul>
+                        <li><strong>Arrow Keys or WASD</strong> - Move your cat</li>
+                        <li><strong>Collect Fish 🐟</strong> - Fill your happy meter</li>
+                        <li><strong>Collect Coins 🪙</strong> - Earn 10 points each</li>
+                        <li><strong>Collect Shields 🛡️</strong> - Protect from obstacles</li>
+                    </ul>
+                    <p class="tip">💡 When happy meter is full, the bathroom appears! Reach it to complete the level.</p>
+                </div>
+                <button id="start-button">Play</button>
+            </div>
+        </div>
+
+        <!-- Try Again Screen -->
+        <div id="try-again-screen" class="screen hidden" style="display: none !important;">
+            <div class="try-again-content">
+                <h2>You lost a life</h2>
+                <p class="lives-message">Lives Left: <span id="lives-left">3</span></p>
+                <div class="try-again-buttons">
+                    <button id="yes-button" class="try-again-btn">Try Again</button>
+                    <button id="exit-button" class="try-again-btn">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen hidden">
+            <div class="game-over-content">
+                <h2>GAME OVER</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <p>Coins Collected: <span id="final-coins">0</span></p>
+                <p id="feedback-message"></p>
+                <button id="restart-button">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Game Clear Screen -->
+        <div id="game-clear-screen" class="screen hidden">
+            <div class="game-clear-content">
+                <h2>GAME CLEAR</h2>
+                <p>Final Score: <span id="clear-score">0</span></p>
+                <p>Coins Collected: <span id="clear-coins">0</span></p>
+                <p class="success-message">🎉 Congratulations! You helped the cat find all the right places! 🎉</p>
+                <button id="clear-restart-button">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Pause Button -->
+        <button id="pause-button" class="hidden">Pause</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+
+
+
+
+
