@@ -46,7 +46,7 @@ class CatDashGame {
                 shieldSpawnRate: 0.4,
                 treatSpawnRate: 0.5,
                 treatsNeeded: 5,
-                description: 'Collect 5 treats to reveal the bathroom!'
+                description: 'Collect 5 treats to open the portal!'
             },
             2: {
                 timeLimit: 45000,
@@ -58,7 +58,7 @@ class CatDashGame {
                 shieldSpawnRate: 0.4,
                 treatSpawnRate: 0.5,
                 treatsNeeded: 8,
-                description: 'Watch out for Roombas! Collect 8 treats.',
+                description: 'Watch out for Roombas! Collect 8 treats to open the portal.',
                 destinationPosition: 'topRight'
             },
             3: {
@@ -71,7 +71,7 @@ class CatDashGame {
                 shieldSpawnRate: 0.3,
                 treatSpawnRate: 0.4,
                 treatsNeeded: 10,
-                description: 'Roombas move across lanes! Collect 10 treats.',
+                description: 'Roombas move across lanes! Collect 10 treats to open the portal.',
                 destinationPosition: 'bottomLeft'
             }
         };
@@ -85,7 +85,7 @@ class CatDashGame {
             obstacleSmall: null,
             obstacleMedium: null,
             obstacleBig: null,
-            litterboxBathroom: null,
+            portalFrames: [],
             coinImage: null,
             shieldImage: null,
             sparkleFrames: [],
@@ -156,7 +156,6 @@ class CatDashGame {
             obstacleSmall: ['assets/obstacle_small.png', 'assets/obstacle_small.PNG'],
             obstacleMedium: ['assets/obstacle_medium.png', 'assets/obstacle_medium.PNG'],
             obstacleBig: ['assets/obstacle_big.png', 'assets/obstacle_big.PNG'],
-            litterboxBathroom: ['assets/bathroom.png', 'assets/bathroom.PNG', 'assets/litterbox_bathroom.png'],
             coinImage: ['assets/coin.png', 'assets/coin.PNG', 'assets/golden_coin.png'],
             shieldImage: ['assets/shield.png', 'assets/shield.PNG', 'assets/shield_icon.png']
         };
@@ -184,9 +183,18 @@ class CatDashGame {
             ];
         }
 
+        for (let i = 1; i <= 4; i++) {
+            imagePaths[`portalFrame${i}`] = [
+                `assets/portal/Portal-${i}.png`,
+                `assets/portal/Portal-${i}.PNG`,
+                `assets/portal/portal-${i}.png`
+            ];
+        }
+
         this.images.catFrames = [];
         this.images.roombaFrames = [];
         this.images.sparkleFrames = [];
+        this.images.portalFrames = [];
 
         let loadedCount = 0;
         const totalImages = Object.keys(imagePaths).length;
@@ -209,6 +217,9 @@ class CatDashGame {
                 } else if (key.startsWith('roombaFrame')) {
                     const frameNum = parseInt(key.replace('roombaFrame', ''));
                     this.images.roombaFrames[frameNum - 1] = img;
+                } else if (key.startsWith('portalFrame')) {
+                    const frameNum = parseInt(key.replace('portalFrame', ''));
+                    this.images.portalFrames[frameNum - 1] = img;
                 } else {
                     this.images[key] = img;
                 }
@@ -432,8 +443,9 @@ class CatDashGame {
             y: destY,
             width: 150,
             height: 150,
-            image: this.images.litterboxBathroom,
-            visible: false
+            visible: false,
+            animationFrame: 0,
+            animationTimer: 0
         };
     }
 
@@ -774,6 +786,18 @@ class CatDashGame {
             }
         }
 
+        // Update portal animation
+        if (this.destination && this.destination.visible) {
+            this.destination.animationTimer += deltaTime;
+            if (this.destination.animationTimer > 150) {
+                this.destination.animationTimer = 0;
+                const maxFrames = this.images.portalFrames.filter(f => f && f.complete).length;
+                if (maxFrames > 0) {
+                    this.destination.animationFrame = (this.destination.animationFrame + 1) % maxFrames;
+                }
+            }
+        }
+
         // Check destination collision
         if (this.destination && this.destination.visible && this.checkCollision(this.player, this.destination)) {
             if (this.state === 'playing') {
@@ -972,7 +996,7 @@ class CatDashGame {
 
                 if (this.treatsCollected >= this.treatsNeeded && this.destination && !this.destination.visible) {
                     this.destination.visible = true;
-                    this.createFeedback("Bathroom revealed!", this.canvas.width / 2, this.canvas.height / 2, '#0984e3');
+                    this.createFeedback("Portal opened!", this.canvas.width / 2, this.canvas.height / 2, '#0984e3');
                 }
                 break;
             }
@@ -1101,7 +1125,7 @@ class CatDashGame {
     }
 
     render() {
-        this.ctx.fillStyle = '#2f394a';
+        this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawFloor();
 
@@ -1306,27 +1330,36 @@ class CatDashGame {
         const dest = this.destination;
         this.ctx.save();
 
-        const pulse = Math.sin(this.gameTime / 200) * 0.3 + 0.7;
-        this.ctx.globalAlpha = pulse;
-
-        if (dest.image && this.imagesLoaded) {
-            this.ctx.drawImage(dest.image, dest.x - dest.width / 2, dest.y - dest.height / 2, dest.width, dest.height);
+        // Draw portal using animated frames (same pattern as cat frames)
+        if (this.images.portalFrames && this.images.portalFrames.length > 0) {
+            const frame = this.images.portalFrames[dest.animationFrame % this.images.portalFrames.length];
+            if (frame && frame.complete && frame.width > 0) {
+                this.ctx.drawImage(frame, dest.x - dest.width / 2, dest.y - dest.height / 2, dest.width, dest.height);
+            } else {
+                this.drawPortalPlaceholder(dest);
+            }
         } else {
-            this.ctx.strokeStyle = '#0984e3';
-            this.ctx.lineWidth = 4;
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.shadowColor = '#0984e3';
-            this.ctx.shadowBlur = 15;
-            this.ctx.fillRect(dest.x - dest.width / 2, dest.y - dest.height / 2, dest.width, dest.height);
-            this.ctx.shadowBlur = 0;
-            this.ctx.strokeRect(dest.x - dest.width / 2, dest.y - dest.height / 2, dest.width, dest.height);
-            this.ctx.fillStyle = '#0984e3';
-            this.ctx.font = 'bold 18px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('\u{1F6BD}', dest.x, dest.y + 5);
+            this.drawPortalPlaceholder(dest);
         }
 
         this.ctx.restore();
+    }
+
+    drawPortalPlaceholder(dest) {
+        this.ctx.strokeStyle = '#8e44ad';
+        this.ctx.lineWidth = 4;
+        this.ctx.fillStyle = 'rgba(142, 68, 173, 0.3)';
+        this.ctx.shadowColor = '#8e44ad';
+        this.ctx.shadowBlur = 15;
+        this.ctx.beginPath();
+        this.ctx.arc(dest.x, dest.y, dest.width / 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 28px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('\u{1F300}', dest.x, dest.y + 10);
     }
 
     drawObstacle(obstacle) {
