@@ -6,6 +6,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
 
+html {
+    overscroll-behavior: none;
+}
+
 body {
     font-family: 'Kalam', 'Patrick Hand', 'Comic Sans MS', 'Marker Felt', cursive, sans-serif;
     background: linear-gradient(135deg, #f0f4f8 0%, #e8edf2 100%);
@@ -17,6 +21,9 @@ body {
     overflow: hidden;
     gap: 20px;
     position: relative;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Hand-drawn paper texture background */
@@ -36,8 +43,9 @@ body::before {
 
 #game-container {
     position: relative;
-    width: 800px;
-    height: 600px;
+    width: min(800px, 100vw);
+    aspect-ratio: 4 / 3;
+    max-height: 100vh;
     background: #ffffff;
     overflow: hidden;
     border-radius: 8px;
@@ -49,13 +57,17 @@ body::before {
     width: 100%;
     height: 100%;
     background: #dfe6e9;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #ui-container {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    width: 800px;
+    width: min(800px, 100vw);
     padding: 10px 16px;
     background: #fffef7;
     position: relative;
@@ -224,9 +236,9 @@ body::before {
 }
 
 button {
-    margin-top: 40px;
-    padding: 18px 50px;
-    font-size: 28px;
+    margin-top: 20px;
+    padding: 14px 40px;
+    font-size: 24px;
     font-weight: 900;
     font-family: inherit;
     background: #4ecdc4;
@@ -238,6 +250,8 @@ button {
     pointer-events: auto;
     position: relative;
     transform: rotate(-0.5deg);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     /* Simple hand-drawn border */
     border-radius: 12px 15px 10px 13px / 13px 12px 15px 10px;
     text-transform: uppercase;
@@ -429,28 +443,28 @@ button:active {
 
 .game-over-content {
     text-align: center;
-    padding: 40px;
+    padding: 25px;
     background: #ffe4e1;
     border: 3px solid #2d3436;
     border-radius: 15px 12px 18px 14px / 14px 15px 12px 18px;
     box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
-    transform: rotate(0.3deg);
     max-width: 500px;
     margin: 0 auto;
+    max-height: 90%;
+    overflow-y: auto;
 }
 
 .game-over-content h2 {
-    font-size: 56px;
+    font-size: 36px;
     font-weight: 900;
     color: #e74c3c;
-    margin-bottom: 30px;
-    transform: rotate(-0.5deg);
+    margin-bottom: 10px;
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
 }
 
 .game-over-content p {
-    font-size: 22px;
-    margin: 20px 0;
+    font-size: 18px;
+    margin: 8px 0;
     color: #2d3436;
     font-weight: 700;
 }
@@ -469,22 +483,22 @@ button:active {
 
 .game-clear-content {
     text-align: center;
-    padding: 40px;
+    padding: 25px;
     background: #e8f5e9;
     border: 3px solid #2d3436;
     border-radius: 15px 12px 18px 14px / 14px 15px 12px 18px;
     box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
-    transform: rotate(-0.3deg);
     max-width: 500px;
     margin: 0 auto;
+    max-height: 90%;
+    overflow-y: auto;
 }
 
 .game-clear-content h2 {
-    font-size: 56px;
+    font-size: 36px;
     font-weight: 900;
     color: #00b894;
-    margin-bottom: 30px;
-    transform: rotate(0.5deg);
+    margin-bottom: 10px;
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
     animation: celebrate 2s ease-in-out infinite;
 }
@@ -499,16 +513,230 @@ button:active {
 }
 
 .game-clear-content p {
-    font-size: 22px;
-    margin: 20px 0;
+    font-size: 18px;
+    margin: 8px 0;
     color: #2d3436;
     font-weight: 700;
 }
 
 .success-message {
-    font-size: 24px;
+    font-size: 20px;
     color: #00b894;
     margin-top: 30px;
     font-weight: 900;
+}
+
+/* Leaderboard */
+#leaderboard-container,
+.end-leaderboard {
+    margin: 15px 0 0 0;
+    text-align: center;
+}
+
+#leaderboard-container h3,
+.end-leaderboard h3 {
+    font-size: 18px;
+    font-weight: 900;
+    color: #2d3436;
+    margin-bottom: 8px;
+}
+
+#leaderboard-table,
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+#leaderboard-table th,
+.leaderboard-table th {
+    padding: 4px 8px;
+    border-bottom: 2px solid #2d3436;
+    font-weight: 900;
+    color: #636e72;
+    text-align: left;
+}
+
+#leaderboard-table td,
+.leaderboard-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #dfe6e9;
+    text-align: left;
+}
+
+#leaderboard-table td:first-child,
+.leaderboard-table td:first-child {
+    font-weight: 900;
+    color: #e67e22;
+    width: 30px;
+}
+
+.lb-loading {
+    text-align: center !important;
+    color: #b2bec3;
+    font-style: italic;
+}
+
+/* Name prompt */
+.name-prompt {
+    margin: 15px 0;
+}
+
+.name-prompt label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #2d3436;
+}
+
+.name-prompt input {
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border: 2px solid #2d3436;
+    border-radius: 8px;
+    text-align: center;
+    width: 180px;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+}
+
+.name-prompt input:focus {
+    border-color: #0984e3;
+    box-shadow: 0 0 0 2px rgba(9, 132, 227, 0.2);
+}
+
+.name-input-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.submit-btn {
+    font-family: inherit;
+    font-size: 16px !important;
+    font-weight: 900;
+    padding: 8px 16px !important;
+    margin-top: 0 !important;
+    background: #00b894;
+    color: #fff;
+    border: 2px solid #2d3436 !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1) !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.submit-btn:hover {
+    background: #00a381;
+    transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+    background: #b2bec3;
+    cursor: default;
+    transform: none !important;
+}
+
+.name-error {
+    font-size: 13px !important;
+    color: #d63031 !important;
+    margin: 4px 0 0 0 !important;
+    min-height: 18px;
+}
+
+.name-success {
+    font-size: 13px !important;
+    color: #00b894 !important;
+    font-weight: 700;
+    margin: 4px 0 0 0 !important;
+    min-height: 18px;
+}
+
+/* Personal best HUD */
+#personal-best-display {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #636e72;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 4px 10px;
+    border-radius: 6px;
+    z-index: 15;
+    pointer-events: none;
+}
+
+/* Virtual joystick — hidden by default, shown on touch devices */
+#joystick {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(45, 52, 54, 0.18);
+    border: 3px solid rgba(45, 52, 54, 0.35);
+    z-index: 14;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#joystick-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 55px;
+    height: 55px;
+    margin-top: -27.5px;
+    margin-left: -27.5px;
+    border-radius: 50%;
+    background: rgba(78, 205, 196, 0.85);
+    border: 3px solid #2d3436;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+    transition: transform 0.05s linear;
+    pointer-events: none;
+}
+
+/* Show joystick on touch-primary devices */
+@media (hover: none) and (pointer: coarse) {
+    #joystick {
+        display: block;
+    }
+    /* Move pause button to left so it doesn't overlap joystick */
+    #pause-button {
+        right: auto;
+        left: 15px;
+    }
+}
+
+/* Mobile-friendly UI scaling */
+@media (max-width: 600px) {
+    #lives-display,
+    #treats-display,
+    #score-display {
+        font-size: 18px;
+        padding: 6px 12px;
+    }
+    #ui-container {
+        padding: 6px 8px;
+    }
+    #ui-primary {
+        gap: 8px;
+    }
+    #ui-secondary {
+        gap: 6px;
+    }
 }
 

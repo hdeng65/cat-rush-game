@@ -139,7 +139,16 @@ class CatDashGame {
 
         // Input
         this.keys = {};
+        this.joystick = {
+            active: false,
+            dx: 0,
+            dy: 0,
+            touchId: null,
+            hStepCooldown: 0,
+            wasPastHThreshold: 0
+        };
         this.setupInput();
+        this.setupJoystick();
         this.setupUI();
         this.loadImages();
 
@@ -327,6 +336,115 @@ class CatDashGame {
         this.player.y = Math.max(minY, Math.min(maxY, this.player.y + direction * 20));
     }
 
+    setupJoystick() {
+        const base = document.getElementById('joystick');
+        const knob = document.getElementById('joystick-knob');
+        if (!base || !knob) return;
+
+        const radius = 50; // max knob travel from center, px
+
+        const getRect = () => base.getBoundingClientRect();
+
+        const update = (clientX, clientY) => {
+            const rect = getRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            let dx = clientX - cx;
+            let dy = clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > radius) {
+                dx = (dx / dist) * radius;
+                dy = (dy / dist) * radius;
+            }
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+            this.joystick.dx = dx / radius;
+            this.joystick.dy = dy / radius;
+        };
+
+        const reset = () => {
+            this.joystick.active = false;
+            this.joystick.touchId = null;
+            this.joystick.dx = 0;
+            this.joystick.dy = 0;
+            this.joystick.wasPastHThreshold = 0;
+            this.joystick.hStepCooldown = 0;
+            knob.style.transform = 'translate(0px, 0px)';
+        };
+
+        base.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.joystick.active) return;
+            const t = e.changedTouches[0];
+            this.joystick.active = true;
+            this.joystick.touchId = t.identifier;
+            update(t.clientX, t.clientY);
+        }, { passive: false });
+
+        base.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!this.joystick.active) return;
+            for (const t of e.changedTouches) {
+                if (t.identifier === this.joystick.touchId) {
+                    update(t.clientX, t.clientY);
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        const endHandler = (e) => {
+            if (!this.joystick.active) return;
+            for (const t of e.changedTouches) {
+                if (t.identifier === this.joystick.touchId) {
+                    reset();
+                    break;
+                }
+            }
+        };
+        base.addEventListener('touchend', endHandler);
+        base.addEventListener('touchcancel', endHandler);
+
+        // Prevent default touch on canvas to stop scroll/zoom, but let buttons/inputs through
+        this.canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+    }
+
+    processJoystickInput(deltaTime) {
+        if (this.state !== 'playing' || !this.joystick.active) {
+            this.joystick.wasPastHThreshold = 0;
+            this.joystick.hStepCooldown = 0;
+            return;
+        }
+
+        const hThreshold = 0.5;
+        const dx = this.joystick.dx;
+        const sign = dx > hThreshold ? 1 : (dx < -hThreshold ? -1 : 0);
+
+        if (sign !== 0) {
+            if (this.joystick.wasPastHThreshold !== sign) {
+                this.movePlayer(sign);
+                this.joystick.hStepCooldown = 180;
+                this.joystick.wasPastHThreshold = sign;
+            } else {
+                this.joystick.hStepCooldown -= deltaTime;
+                if (this.joystick.hStepCooldown <= 0) {
+                    this.movePlayer(sign);
+                    this.joystick.hStepCooldown = 180;
+                }
+            }
+        } else {
+            this.joystick.wasPastHThreshold = 0;
+            this.joystick.hStepCooldown = 0;
+        }
+
+        const dy = this.joystick.dy;
+        if (Math.abs(dy) > 0.15) {
+            const vSpeed = 0.35; // px per ms at full deflection
+            const maxY = this.canvas.height - 100;
+            const minY = 50;
+            this.player.y = Math.max(minY, Math.min(maxY, this.player.y + dy * vSpeed * deltaTime));
+        }
+    }
+
     setupUI() {
         const startScreen = document.getElementById('start-screen');
         const tryAgainScreen = document.getElementById('try-again-screen');
@@ -346,7 +464,21 @@ class CatDashGame {
         document.getElementById('exit-button').addEventListener('click', () => this.goToStartScreen());
         document.getElementById('restart-button').addEventListener('click', () => this.restart());
         document.getElementById('clear-restart-button').addEventListener('click', () => this.restart());
+        document.getElementById('submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-over'));
+        document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-clear'));
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
+
+        // Pre-fill name inputs from localStorage
+        const storedName = getStoredPlayerName();
+        if (storedName) {
+            const nameInput = document.getElementById('player-name-input');
+            const clearNameInput = document.getElementById('clear-player-name-input');
+            if (nameInput) nameInput.value = storedName;
+            if (clearNameInput) clearNameInput.value = storedName;
+        }
+
+        // Load leaderboard on start screen
+        this.loadStartScreenLeaderboard();
     }
 
     showUI(visible) {
@@ -362,6 +494,7 @@ class CatDashGame {
         document.getElementById('pause-button').classList.remove('hidden');
         document.getElementById('pause-button').style.display = '';
         this.showUI(true);
+        this.loadPersonalBest();
     }
 
     restart() {
@@ -528,7 +661,9 @@ class CatDashGame {
         const startScreen = document.getElementById('start-screen');
         if (startScreen) { startScreen.classList.remove('hidden'); startScreen.style.display = 'flex'; }
         document.getElementById('pause-button').classList.add('hidden');
+        document.getElementById('personal-best-display').style.display = 'none';
         this.showUI(false);
+        this.loadStartScreenLeaderboard();
     }
 
     tryAgain() {
@@ -559,34 +694,56 @@ class CatDashGame {
 
     gameOver() {
         this.state = 'gameOver';
+        this.scoreSubmitted = false;
         const tryAgainScreen = document.getElementById('try-again-screen');
         if (tryAgainScreen) { tryAgainScreen.classList.add('hidden'); tryAgainScreen.style.display = 'none'; }
 
-        document.getElementById('final-score').textContent = this.score;
+        document.getElementById('final-score').textContent = this.score.toLocaleString();
         document.getElementById('final-coins').textContent = this.coins;
         const messages = ["Meow! That was fun!", "Purr-fect try!", "You're a star!", "Amazing run!"];
         document.getElementById('feedback-message').textContent = messages[Math.floor(Math.random() * messages.length)];
 
+        // Pre-fill name
+        const storedName = getStoredPlayerName();
+        const nameInput = document.getElementById('player-name-input');
+        if (storedName && nameInput) nameInput.value = storedName;
+        document.getElementById('name-error').textContent = '';
+
         const gameOverScreen = document.getElementById('game-over-screen');
         if (gameOverScreen) { gameOverScreen.classList.remove('hidden'); gameOverScreen.style.display = 'flex'; }
         document.getElementById('pause-button').classList.add('hidden');
+        document.getElementById('personal-best-display').style.display = 'none';
         this.showUI(false);
+
+        // Load leaderboard into end screen
+        this.loadEndScreenLeaderboard('end-leaderboard-body');
     }
 
     gameClear() {
         this.state = 'gameClear';
+        this.scoreSubmitted = false;
         this.playSound('gameClear', 0.8);
 
         const tryAgainScreen = document.getElementById('try-again-screen');
         if (tryAgainScreen) { tryAgainScreen.classList.add('hidden'); tryAgainScreen.style.display = 'none'; }
 
-        document.getElementById('clear-score').textContent = this.score;
+        document.getElementById('clear-score').textContent = this.score.toLocaleString();
         document.getElementById('clear-coins').textContent = this.coins;
+
+        // Pre-fill name
+        const storedName = getStoredPlayerName();
+        const clearNameInput = document.getElementById('clear-player-name-input');
+        if (storedName && clearNameInput) clearNameInput.value = storedName;
+        document.getElementById('clear-name-error').textContent = '';
 
         const gameClearScreen = document.getElementById('game-clear-screen');
         if (gameClearScreen) { gameClearScreen.classList.remove('hidden'); gameClearScreen.style.display = 'flex'; }
         document.getElementById('pause-button').classList.add('hidden');
+        document.getElementById('personal-best-display').style.display = 'none';
         this.showUI(false);
+
+        // Load leaderboard into end screen
+        this.loadEndScreenLeaderboard('clear-leaderboard-body');
     }
 
     update(deltaTime) {
@@ -653,6 +810,8 @@ class CatDashGame {
         this.currentSpeed = this.baseSpeed * this.speedMultiplier;
         this.obstacleSpawnInterval = config.spawnInterval;
         this.collectibleSpawnInterval = config.collectibleSpawnInterval || 200;
+
+        this.processJoystickInput(deltaTime);
 
         // Update player lane position
         const targetX = this.player.targetLane * this.player.laneWidth + this.player.laneWidth / 2;
@@ -1503,6 +1662,123 @@ class CatDashGame {
         }
 
         this.ctx.restore();
+    }
+
+    // --- Supabase / leaderboard wiring ---
+
+    async loadStartScreenLeaderboard() {
+        try {
+            const data = await getLeaderboard();
+            this.renderLeaderboard('leaderboard-body', data);
+        } catch (e) {
+            this.renderLeaderboard('leaderboard-body', null);
+        }
+    }
+
+    async loadEndScreenLeaderboard(tbodyId) {
+        try {
+            const data = await getLeaderboard();
+            this.renderLeaderboard(tbodyId, data);
+        } catch (e) {
+            this.renderLeaderboard(tbodyId, null);
+        }
+    }
+
+    renderLeaderboard(tbodyId, data) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="lb-loading">No scores yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map((row, i) =>
+            `<tr>
+                <td>${i + 1}</td>
+                <td>${this.escapeHtml(row.player_name)}</td>
+                <td>${row.score.toLocaleString()}</td>
+                <td>${row.coins_total}</td>
+            </tr>`
+        ).join('');
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    async loadPersonalBest() {
+        try {
+            const best = await getPersonalBest();
+            const el = document.getElementById('personal-best-display');
+            const val = document.getElementById('personal-best-value');
+            if (best && best.score > 0) {
+                val.textContent = best.score.toLocaleString();
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
+            }
+        } catch (e) {
+            document.getElementById('personal-best-display').style.display = 'none';
+        }
+    }
+
+    async handleScoreSubmit(screenType) {
+        const isGameOver = screenType === 'game-over';
+        const nameInput = document.getElementById(isGameOver ? 'player-name-input' : 'clear-player-name-input');
+        const errorEl = document.getElementById(isGameOver ? 'name-error' : 'clear-name-error');
+        const successEl = document.getElementById(isGameOver ? 'name-success' : 'clear-name-success');
+        const submitBtn = document.getElementById(isGameOver ? 'submit-score-button' : 'clear-submit-score-button');
+        const playerName = nameInput ? nameInput.value : '';
+
+        if (this.scoreSubmitted) {
+            successEl.textContent = 'Already saved!';
+            return;
+        }
+
+        if (!playerName.trim()) {
+            errorEl.textContent = 'Please enter a name';
+            successEl.textContent = '';
+            return;
+        }
+
+        if (!isValidPlayerName(playerName)) {
+            errorEl.textContent = 'Letters, numbers, spaces & emoji only';
+            successEl.textContent = '';
+            return;
+        }
+
+        errorEl.textContent = '';
+        successEl.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        const cleanName = sanitizePlayerName(playerName);
+        setStoredPlayerName(cleanName);
+
+        try {
+            await submitScore({
+                playerName: cleanName,
+                score: this.score,
+                coinsEarned: this.coins,
+                levelReached: this.currentLevel
+            });
+            this.scoreSubmitted = true;
+            successEl.textContent = 'Score saved!';
+            submitBtn.textContent = 'Saved';
+            nameInput.disabled = true;
+
+            // Refresh the leaderboard on this screen
+            const tbodyId = isGameOver ? 'end-leaderboard-body' : 'clear-leaderboard-body';
+            this.loadEndScreenLeaderboard(tbodyId);
+        } catch (e) {
+            console.error('Score submit error:', e);
+            errorEl.textContent = 'Save failed: ' + (e.message || 'unknown error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save';
+        }
     }
 
     animate(currentTime) {

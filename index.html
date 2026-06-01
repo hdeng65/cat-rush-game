@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Dash! - Chibi Cat Racing Game</title>
+    <title>Cat Rush! - Chibi Cat Racing Game</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase.js"></script>
+    <script src="session.js"></script>
+    <script src="db.js"></script>
 </head>
 <body>
     <!-- UI Elements - Outside Canvas -->
@@ -36,6 +41,15 @@
                     <p>⚡ 3+ items quickly = 1.5x combo!</p>
                     <p class="controls">Move: Arrow Keys / WASD</p>
                 </div>
+                <div id="leaderboard-container">
+                    <h3>Leaderboard</h3>
+                    <table id="leaderboard-table">
+                        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>🪙</th></tr></thead>
+                        <tbody id="leaderboard-body">
+                            <tr><td colspan="4" class="lb-loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
                 <button id="start-button">Start Game</button>
             </div>
         </div>
@@ -59,6 +73,22 @@
                 <p>Final Score: <span id="final-score">0</span></p>
                 <p>Coins Collected: <span id="final-coins">0</span></p>
                 <p id="feedback-message"></p>
+                <div id="name-prompt" class="name-prompt">
+                    <label for="player-name-input">Enter your name:</label>
+                    <div class="name-input-row">
+                        <input type="text" id="player-name-input" maxlength="12" placeholder="Your name">
+                        <button id="submit-score-button" class="submit-btn">Save</button>
+                    </div>
+                    <p id="name-error" class="name-error"></p>
+                    <p id="name-success" class="name-success"></p>
+                </div>
+                <div id="end-leaderboard-container" class="end-leaderboard">
+                    <h3>Top 10</h3>
+                    <table class="leaderboard-table">
+                        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>🪙</th></tr></thead>
+                        <tbody id="end-leaderboard-body"></tbody>
+                    </table>
+                </div>
                 <button id="restart-button">Play Again</button>
             </div>
         </div>
@@ -69,13 +99,37 @@
                 <h2>GAME CLEAR</h2>
                 <p>Final Score: <span id="clear-score">0</span></p>
                 <p>Coins Collected: <span id="clear-coins">0</span></p>
-                <p class="success-message">🎉 Congratulations! You helped the cat find all the right places! 🎉</p>
+                <p class="success-message">🎉 Congratulations! 🎉</p>
+                <div id="clear-name-prompt" class="name-prompt">
+                    <label for="clear-player-name-input">Enter your name:</label>
+                    <div class="name-input-row">
+                        <input type="text" id="clear-player-name-input" maxlength="12" placeholder="Your name">
+                        <button id="clear-submit-score-button" class="submit-btn">Save</button>
+                    </div>
+                    <p id="clear-name-error" class="name-error"></p>
+                    <p id="clear-name-success" class="name-success"></p>
+                </div>
+                <div id="clear-leaderboard-container" class="end-leaderboard">
+                    <h3>Top 10</h3>
+                    <table class="leaderboard-table">
+                        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>🪙</th></tr></thead>
+                        <tbody id="clear-leaderboard-body"></tbody>
+                    </table>
+                </div>
                 <button id="clear-restart-button">Play Again</button>
             </div>
         </div>
 
+        <!-- Personal Best HUD -->
+        <div id="personal-best-display" style="display:none;">Best: <span id="personal-best-value">0</span></div>
+
         <!-- Pause Button -->
         <button id="pause-button" class="hidden">Pause</button>
+
+        <!-- Virtual Joystick (touch devices only) -->
+        <div id="joystick" aria-hidden="true">
+            <div id="joystick-knob"></div>
+        </div>
     </div>
 
     <script src="game.js"></script>
