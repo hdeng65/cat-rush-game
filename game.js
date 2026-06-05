@@ -762,7 +762,7 @@ class CatDashGame {
 
         if (this.state !== 'playing') return;
 
-        this.tileScrollPos = (this.tileScrollPos + this.currentSpeed * deltaTime / 16) % 160;
+        this.tileScrollPos = ((this.tileScrollPos - this.currentSpeed * deltaTime / 16) % 160 + 160) % 160;
 
         this.gameTime += deltaTime;
         this.levelTime += deltaTime;
