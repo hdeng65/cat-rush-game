@@ -56,6 +56,8 @@
 
         <!-- Try Again Screen -->
         <div id="try-again-screen" class="screen hidden" style="display: none !important;">
+            <img class="screen-bg-anim" id="fail-anim-try-again" src="" alt="">
+            <img id="fail-obstacle-try-again" src="" alt="" style="display: none;">
             <div class="try-again-content">
                 <h2>You lost a life</h2>
                 <p class="lives-message">Lives Left: <span id="lives-left">3</span></p>
@@ -66,8 +68,21 @@
             </div>
         </div>
 
+        <!-- Level Clear Screen -->
+        <div id="level-clear-screen" class="screen hidden" style="display: none !important;">
+            <img class="screen-bg-anim" id="success-anim-level-clear" src="" alt="">
+            <div class="level-clear-content">
+                <h2>Level Clear!</h2>
+                <p class="level-clear-message">Level <span id="level-clear-number">1</span> complete!</p>
+                <div class="try-again-buttons">
+                    <button id="next-level-button" class="try-again-btn">Next Level</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="screen hidden">
+            <img class="screen-bg-anim" id="fail-anim-game-over" src="" alt="">
             <div class="game-over-content">
                 <h2>GAME OVER</h2>
                 <p>Final Score: <span id="final-score">0</span></p>

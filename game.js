@@ -89,9 +89,12 @@ class CatDashGame {
             coinImage: null,
             shieldImage: null,
             sparkleFrames: [],
-            roombaFrames: []
+            roombaFrames: [],
+            failFrames: [],
+            successFrames: []
         };
         this.imagesLoaded = false;
+        this.screenAnimInterval = null;
 
         // Audio assets
         this.audio = {
@@ -209,6 +212,19 @@ class CatDashGame {
         this.images.roombaFrames = [];
         this.images.sparkleFrames = [];
         this.images.portalFrames = [];
+        this.images.failFrames = [];
+        this.images.successFrames = [];
+
+        for (let i = 1; i <= 12; i++) {
+            const img = new Image();
+            img.src = `assets/level-animations/cat_dash_fail/Cat_Dash_Fail-${i}.png`;
+            this.images.failFrames[i - 1] = img;
+        }
+        for (let i = 1; i <= 16; i++) {
+            const img = new Image();
+            img.src = `assets/level-animations/cat_dash_success/Cat_Dash_Cat-${i}.png`;
+            this.images.successFrames[i - 1] = img;
+        }
 
         let loadedCount = 0;
         const totalImages = Object.keys(imagePaths).length;
@@ -308,6 +324,8 @@ class CatDashGame {
     handleInput(key) {
         if (this.state === 'start' && (key === 'enter' || key === ' ')) {
             this.startGame();
+        } else if (this.state === 'levelClear' && (key === 'enter' || key === ' ')) {
+            this.advanceFromLevelClear();
         } else if (this.state === 'tryAgain' && (key === 'enter' || key === ' ')) {
             this.tryAgain();
         } else if (this.state === 'gameOver' && (key === 'enter' || key === ' ')) {
@@ -469,6 +487,7 @@ class CatDashGame {
         document.getElementById('exit-button').addEventListener('click', () => this.goToStartScreen());
         document.getElementById('restart-button').addEventListener('click', () => this.restart());
         document.getElementById('clear-restart-button').addEventListener('click', () => this.restart());
+        document.getElementById('next-level-button').addEventListener('click', () => this.advanceFromLevelClear());
         document.getElementById('submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-over'));
         document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-clear'));
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
@@ -503,10 +522,13 @@ class CatDashGame {
     }
 
     restart() {
+        this.stopScreenAnim();
         document.getElementById('game-over-screen').classList.add('hidden');
         document.getElementById('game-over-screen').style.display = 'none';
         document.getElementById('game-clear-screen').classList.add('hidden');
         document.getElementById('game-clear-screen').style.display = 'none';
+        document.getElementById('level-clear-screen').classList.add('hidden');
+        document.getElementById('level-clear-screen').style.display = 'none';
         document.getElementById('try-again-screen').classList.add('hidden');
         document.getElementById('try-again-screen').style.display = 'none';
         document.getElementById('pause-button').classList.remove('hidden');
@@ -635,7 +657,7 @@ class CatDashGame {
         }
     }
 
-    loseLife() {
+    loseLife(obstacle = null) {
         this.state = 'tryAgain';
         this.obstacles = [];
         this.collectibles = [];
@@ -651,14 +673,78 @@ class CatDashGame {
             const livesLeft = document.getElementById('lives-left');
             if (livesLeft) livesLeft.textContent = this.lives;
             if (tryAgainScreen) { tryAgainScreen.classList.remove('hidden'); tryAgainScreen.style.display = 'flex'; }
+            this.startScreenAnim('fail-anim-try-again', this.images.failFrames);
+            this.showFailObstacle(obstacle);
             document.getElementById('pause-button').classList.add('hidden');
         }
+    }
+
+    showFailObstacle(obstacle) {
+        const obstacleImg = document.getElementById('fail-obstacle-try-again');
+        if (!obstacleImg) return;
+        if (!obstacle) { obstacleImg.style.display = 'none'; return; }
+
+        let src = null;
+        if (obstacle.type === 'roomba') {
+            const frame = this.images.roombaFrames && this.images.roombaFrames[0];
+            if (frame) src = frame.src;
+        } else {
+            const size = obstacle.size || 'medium';
+            const key = size === 'small' ? 'obstacleSmall' : size === 'big' ? 'obstacleBig' : 'obstacleMedium';
+            if (this.images[key]) src = this.images[key].src;
+        }
+
+        if (src) {
+            obstacleImg.src = src;
+            obstacleImg.style.display = 'block';
+        } else {
+            obstacleImg.style.display = 'none';
+        }
+    }
+
+    startScreenAnim(imgId, frames, fps = 12) {
+        this.stopScreenAnim();
+        const img = document.getElementById(imgId);
+        if (!img || !frames || frames.length === 0) return;
+        let frame = 0;
+        img.src = frames[0].src;
+        this.screenAnimInterval = setInterval(() => {
+            frame = (frame + 1) % frames.length;
+            img.src = frames[frame].src;
+        }, 1000 / fps);
+    }
+
+    stopScreenAnim() {
+        if (this.screenAnimInterval) {
+            clearInterval(this.screenAnimInterval);
+            this.screenAnimInterval = null;
+        }
+    }
+
+    advanceFromLevelClear() {
+        this.stopScreenAnim();
+        const levelClearScreen = document.getElementById('level-clear-screen');
+        if (levelClearScreen) { levelClearScreen.classList.add('hidden'); levelClearScreen.style.display = 'none'; }
+        document.getElementById('pause-button').classList.remove('hidden');
+        document.getElementById('pause-button').style.display = '';
+        this.nextLevel();
+    }
+
+    showLevelClear() {
+        this.state = 'levelClear';
+        const levelClearScreen = document.getElementById('level-clear-screen');
+        const levelClearNumber = document.getElementById('level-clear-number');
+        if (levelClearNumber) levelClearNumber.textContent = this.currentLevel;
+        if (levelClearScreen) { levelClearScreen.classList.remove('hidden'); levelClearScreen.style.removeProperty('display'); levelClearScreen.style.display = 'flex'; }
+        document.getElementById('pause-button').classList.add('hidden');
+        this.startScreenAnim('success-anim-level-clear', this.images.successFrames);
     }
 
     goToStartScreen() {
         this.state = 'start';
 
-        ['try-again-screen', 'game-over-screen', 'game-clear-screen'].forEach(id => {
+        this.stopScreenAnim();
+        ['try-again-screen', 'game-over-screen', 'game-clear-screen', 'level-clear-screen'].forEach(id => {
             const el = document.getElementById(id);
             if (el) { el.classList.add('hidden'); el.style.display = 'none'; }
         });
@@ -672,6 +758,7 @@ class CatDashGame {
     }
 
     tryAgain() {
+        this.stopScreenAnim();
         this.state = 'playing';
         this.treatsCollected = 0;
         this.comboCount = 0;
@@ -716,6 +803,7 @@ class CatDashGame {
 
         const gameOverScreen = document.getElementById('game-over-screen');
         if (gameOverScreen) { gameOverScreen.classList.remove('hidden'); gameOverScreen.style.display = 'flex'; }
+        this.startScreenAnim('fail-anim-game-over', this.images.failFrames);
         document.getElementById('pause-button').classList.add('hidden');
         document.getElementById('personal-best-display').style.display = 'none';
         this.showUI(false);
@@ -920,7 +1008,7 @@ class CatDashGame {
                     this.obstacles.splice(i, 1);
                 } else {
                     this.playSound(obstacle.type === 'roomba' ? 'roombaHit' : 'obstacleHit', 0.6);
-                    this.loseLife();
+                    this.loseLife(obstacle);
                     return;
                 }
             }
@@ -970,7 +1058,7 @@ class CatDashGame {
                 this.state = 'levelComplete';
                 this.createParticles(this.destination.x, this.destination.y, '#00b894', 'success');
                 this.playSound('levelComplete', 0.7);
-                setTimeout(() => this.nextLevel(), 1500);
+                setTimeout(() => this.showLevelClear(), 800);
             }
         }
 
