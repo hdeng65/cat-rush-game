@@ -218,11 +218,13 @@ class CatDashGame {
         for (let i = 1; i <= 12; i++) {
             const img = new Image();
             img.src = `assets/level-animations/cat_dash_fail/Cat_Dash_Fail-${i}.png`;
+            if (img.decode) img.decode().catch(() => {});
             this.images.failFrames[i - 1] = img;
         }
         for (let i = 1; i <= 16; i++) {
             const img = new Image();
             img.src = `assets/level-animations/cat_dash_success/Cat_Dash_Cat-${i}.png`;
+            if (img.decode) img.decode().catch(() => {});
             this.images.successFrames[i - 1] = img;
         }
 
@@ -702,19 +704,38 @@ class CatDashGame {
         }
     }
 
-    startScreenAnim(imgId, frames, fps = 12) {
+    startScreenAnim(imgId, frames, fps = 20) {
         this.stopScreenAnim();
         const img = document.getElementById(imgId);
         if (!img || !frames || frames.length === 0) return;
+
         let frame = 0;
         img.src = frames[0].src;
-        this.screenAnimInterval = setInterval(() => {
-            frame = (frame + 1) % frames.length;
+
+        const frameDuration = 1000 / fps;
+        let lastTime = performance.now();
+        let acc = 0;
+
+        const tick = (now) => {
+            acc += now - lastTime;
+            lastTime = now;
+            // Advance as many frames as elapsed time calls for (stable cadence,
+            // no drift / coalescing like setInterval).
+            while (acc >= frameDuration) {
+                acc -= frameDuration;
+                frame = (frame + 1) % frames.length;
+            }
             img.src = frames[frame].src;
-        }, 1000 / fps);
+            this.screenAnimRAF = requestAnimationFrame(tick);
+        };
+        this.screenAnimRAF = requestAnimationFrame(tick);
     }
 
     stopScreenAnim() {
+        if (this.screenAnimRAF) {
+            cancelAnimationFrame(this.screenAnimRAF);
+            this.screenAnimRAF = null;
+        }
         if (this.screenAnimInterval) {
             clearInterval(this.screenAnimInterval);
             this.screenAnimInterval = null;
