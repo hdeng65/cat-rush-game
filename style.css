@@ -435,6 +435,108 @@ button:active {
     box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
 }
 
+.screen-bg-anim {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    opacity: 0.25;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.try-again-content,
+.level-clear-content,
+.game-over-content,
+.game-clear-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Scaled, bottom-aligned background animations (no modal card) */
+#fail-anim-try-again,
+#success-anim-level-clear {
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    opacity: 1;
+}
+
+/* Try Again Screen - animation background, no modal card */
+#try-again-screen {
+    padding-bottom: 220px;
+}
+
+/* Obstacle that triggered the fail, overlapping the bottom 50px of the animation */
+#fail-obstacle-try-again {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    /* Animation is 200px tall, anchored at bottom:0. Sit the obstacle on the
+       floor so its top ~50px overlaps the animation's bottom 50px band. */
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.try-again-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.try-again-content h2,
+.try-again-content .lives-message {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Level Clear Screen */
+#level-clear-screen {
+    background: #fffef7;
+    color: #2d3436;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 220px;
+}
+
+.level-clear-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    text-align: center;
+}
+
+.level-clear-content h2 {
+    font-size: 36px;
+    font-weight: 900;
+    color: #00b894;
+    margin-bottom: 30px;
+    transform: rotate(-0.3deg);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.level-clear-message {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3436;
+    margin: 25px 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
 /* Game Over Screen - Hand-drawn Style */
 #game-over-screen {
     background: #fffef7;
