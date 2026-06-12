@@ -43,12 +43,14 @@
                 </div>
                 <div id="leaderboard-container">
                     <h3>Leaderboard</h3>
-                    <table id="leaderboard-table">
-                        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>🪙</th></tr></thead>
-                        <tbody id="leaderboard-body">
-                            <tr><td colspan="4" class="lb-loading">Loading...</td></tr>
-                        </tbody>
-                    </table>
+                    <div id="leaderboard-scroll">
+                        <table id="leaderboard-table">
+                            <thead><tr><th>#</th><th>Name</th><th>Score</th><th>🪙</th></tr></thead>
+                            <tbody id="leaderboard-body">
+                                <tr><td colspan="4" class="lb-loading">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <button id="start-button">Start Game</button>
             </div>
@@ -88,15 +90,7 @@
                 <p>Final Score: <span id="final-score">0</span></p>
                 <p>Coins Collected: <span id="final-coins">0</span></p>
                 <p id="feedback-message"></p>
-                <div id="name-prompt" class="name-prompt">
-                    <label for="player-name-input">Enter your name:</label>
-                    <div class="name-input-row">
-                        <input type="text" id="player-name-input" maxlength="12" placeholder="Your name">
-                        <button id="submit-score-button" class="submit-btn">Save</button>
-                    </div>
-                    <p id="name-error" class="name-error"></p>
-                    <p id="name-success" class="name-success"></p>
-                </div>
+                <p class="leaderboard-note">Finish all levels to get on the leaderboard!</p>
                 <div id="end-leaderboard-container" class="end-leaderboard">
                     <h3>Top 10</h3>
                     <table class="leaderboard-table">

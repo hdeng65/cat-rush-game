@@ -176,9 +176,25 @@ body::before {
 }
 
 .start-content {
-    max-width: 500px;
-    padding: 30px;
+    max-width: 720px;
+    width: 100%;
+    padding: 16px 28px;
     text-align: center;
+    box-sizing: border-box;
+}
+
+.start-content h1 {
+    font-size: 38px;
+    margin-bottom: 2px;
+}
+
+.start-content .theme-text {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+}
+
+.start-content #start-button {
+    margin-top: 12px;
 }
 
 .screen h1 {
@@ -198,9 +214,13 @@ body::before {
 }
 
 .start-instructions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 0;
     text-align: left;
-    margin: 0 0 10px 0;
-    padding: 15px 20px;
+    margin: 0 0 8px 0;
+    padding: 8px 18px;
     background: #f0f4f8;
     border: 2px dashed #2d3436;
     border-radius: 12px 15px 10px 13px / 13px 12px 15px 10px;
@@ -208,18 +228,20 @@ body::before {
 }
 
 .start-instructions p {
-    font-size: 16px;
-    margin: 6px 0;
+    font-size: 13px;
+    margin: 3px 0;
     text-align: left;
+    white-space: nowrap;
 }
 
 .start-instructions .controls {
-    margin-top: 10px;
-    font-size: 14px;
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-size: 12px;
     color: #636e72;
     text-align: center;
     border-top: 1px dashed #b2bec3;
-    padding-top: 8px;
+    padding-top: 4px;
 }
 
 .screen h2 {
@@ -631,16 +653,33 @@ button:active {
 /* Leaderboard */
 #leaderboard-container,
 .end-leaderboard {
-    margin: 15px 0 0 0;
+    margin: 0;
     text-align: center;
 }
 
 #leaderboard-container h3,
 .end-leaderboard h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 900;
     color: #2d3436;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+}
+
+/* Fixed-size bounding box: shows ~5 rows, scrolls internally for the rest. */
+#leaderboard-scroll {
+    height: 188px;
+    overflow-y: auto;
+    border: 2px solid #2d3436;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0 10px;
+}
+
+#leaderboard-table thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
 }
 
 #leaderboard-table,
@@ -671,6 +710,13 @@ button:active {
     font-weight: 900;
     color: #e67e22;
     width: 30px;
+}
+
+.leaderboard-note {
+    font-size: 14px;
+    font-style: italic;
+    color: #636e72;
+    margin: 8px 0 4px 0;
 }
 
 .lb-loading {
