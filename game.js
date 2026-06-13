@@ -31,13 +31,13 @@ class CatDashGame {
         this.currentLevel = 1;
         this.maxLevel = 3;
         this.levelTime = 0;
-        this.levelTimeLimit = 30000;
+        this.levelTimeLimit = 60000;
         this.levelTransitionTimer = 0;
         this.levelTransitionDuration = 2000;
 
         this.levelConfig = {
             1: {
-                timeLimit: 30000,
+                timeLimit: 60000,
                 baseSpeed: 1.0,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.3,
@@ -49,7 +49,7 @@ class CatDashGame {
                 description: 'Collect 5 treats to open the portal!'
             },
             2: {
-                timeLimit: 45000,
+                timeLimit: 60000,
                 baseSpeed: 1.3,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.4,
@@ -490,16 +490,14 @@ class CatDashGame {
         document.getElementById('restart-button').addEventListener('click', () => this.restart());
         document.getElementById('clear-restart-button').addEventListener('click', () => this.restart());
         document.getElementById('next-level-button').addEventListener('click', () => this.advanceFromLevelClear());
-        document.getElementById('submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-over'));
-        document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-clear'));
+        // Score submission only happens on Game Clear (finishing all levels), not Game Over
+        document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit());
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
 
-        // Pre-fill name inputs from localStorage
+        // Pre-fill name input from localStorage (Game Clear screen only)
         const storedName = getStoredPlayerName();
         if (storedName) {
-            const nameInput = document.getElementById('player-name-input');
             const clearNameInput = document.getElementById('clear-player-name-input');
-            if (nameInput) nameInput.value = storedName;
             if (clearNameInput) clearNameInput.value = storedName;
         }
 
@@ -815,12 +813,6 @@ class CatDashGame {
         document.getElementById('final-coins').textContent = this.coins;
         const messages = ["Meow! That was fun!", "Purr-fect try!", "You're a star!", "Amazing run!"];
         document.getElementById('feedback-message').textContent = messages[Math.floor(Math.random() * messages.length)];
-
-        // Pre-fill name
-        const storedName = getStoredPlayerName();
-        const nameInput = document.getElementById('player-name-input');
-        if (storedName && nameInput) nameInput.value = storedName;
-        document.getElementById('name-error').textContent = '';
 
         const gameOverScreen = document.getElementById('game-over-screen');
         if (gameOverScreen) { gameOverScreen.classList.remove('hidden'); gameOverScreen.style.display = 'flex'; }
@@ -1843,12 +1835,17 @@ class CatDashGame {
         }
     }
 
-    async handleScoreSubmit(screenType) {
-        const isGameOver = screenType === 'game-over';
-        const nameInput = document.getElementById(isGameOver ? 'player-name-input' : 'clear-player-name-input');
-        const errorEl = document.getElementById(isGameOver ? 'name-error' : 'clear-name-error');
-        const successEl = document.getElementById(isGameOver ? 'name-success' : 'clear-name-success');
-        const submitBtn = document.getElementById(isGameOver ? 'submit-score-button' : 'clear-submit-score-button');
+    async handleScoreSubmit() {
+        // Scores are only submitted from the Game Clear screen (all levels finished).
+        // Hard guard: never save on Game Over or any other state.
+        if (this.state !== 'gameClear') {
+            return;
+        }
+
+        const nameInput = document.getElementById('clear-player-name-input');
+        const errorEl = document.getElementById('clear-name-error');
+        const successEl = document.getElementById('clear-name-success');
+        const submitBtn = document.getElementById('clear-submit-score-button');
         const playerName = nameInput ? nameInput.value : '';
 
         if (this.scoreSubmitted) {
@@ -1889,8 +1886,7 @@ class CatDashGame {
             nameInput.disabled = true;
 
             // Refresh the leaderboard on this screen
-            const tbodyId = isGameOver ? 'end-leaderboard-body' : 'clear-leaderboard-body';
-            this.loadEndScreenLeaderboard(tbodyId);
+            this.loadEndScreenLeaderboard('clear-leaderboard-body');
         } catch (e) {
             console.error('Score submit error:', e);
             errorEl.textContent = 'Save failed: ' + (e.message || 'unknown error');
