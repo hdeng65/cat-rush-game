@@ -82,14 +82,16 @@ class CatDashGame {
             catGif: null,
             catSprite: null,
             catFrames: [],
+            catAfterPortalFrames: [],
             obstacleSmall: null,
             obstacleMedium: null,
             obstacleBig: null,
             portalFrames: [],
-            coinImage: null,
-            shieldImage: null,
             sparkleFrames: [],
             roombaFrames: [],
+            coinFrames: [],
+            fishFrames: [],
+            shieldFrames: [],
             failFrames: [],
             successFrames: []
         };
@@ -172,9 +174,7 @@ class CatDashGame {
             catSprite: ['assets/cat_spritesheet.webp', 'assets/cat_spritesheet.PNG', 'assets/cat_spritesheet.png'],
             obstacleSmall: ['assets/obstacle_small.png', 'assets/obstacle_small.PNG'],
             obstacleMedium: ['assets/obstacle_medium.png', 'assets/obstacle_medium.PNG'],
-            obstacleBig: ['assets/obstacle_big.png', 'assets/obstacle_big.PNG'],
-            coinImage: ['assets/coin.png', 'assets/coin.PNG', 'assets/golden_coin.png'],
-            shieldImage: ['assets/shield.png', 'assets/shield.PNG', 'assets/shield_icon.png']
+            obstacleBig: ['assets/obstacle_big.png', 'assets/obstacle_big.PNG']
         };
 
         for (let i = 1; i <= 4; i++) {
@@ -183,6 +183,13 @@ class CatDashGame {
                 `assets/cat_frame_${frameNum}.PNG`,
                 `assets/cat_frame_${frameNum}.png`,
                 `assets/cat_frame_${i}.png`
+            ];
+        }
+
+        for (let i = 1; i <= 4; i++) {
+            imagePaths[`catAfterPortalFrame${i}`] = [
+                `assets/cat-after-portal-opens/Cat_Dash_Cat-gotta_Poo-${i}.png`,
+                `assets/cat-after-portal-opens/Cat_Dash_Cat-gotta_Poo-${i}.PNG`
             ];
         }
 
@@ -208,10 +215,35 @@ class CatDashGame {
             ];
         }
 
+        for (let i = 1; i <= 4; i++) {
+            imagePaths[`fishFrame${i}`] = [
+                `assets/fish/fish-${i}.png`,
+                `assets/fish/fish-${i}.PNG`
+            ];
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            imagePaths[`coinFrame${i}`] = [
+                `assets/coin/coin-${i}.png`,
+                `assets/coin/coin-${i}.PNG`
+            ];
+        }
+
+        for (let i = 1; i <= 8; i++) {
+            imagePaths[`shieldFrame${i}`] = [
+                `assets/shield/shield-${i}.png`,
+                `assets/shield/shield-${i}.PNG`
+            ];
+        }
+
         this.images.catFrames = [];
+        this.images.catAfterPortalFrames = [];
         this.images.roombaFrames = [];
         this.images.sparkleFrames = [];
         this.images.portalFrames = [];
+        this.images.coinFrames = [];
+        this.images.fishFrames = [];
+        this.images.shieldFrames = [];
         this.images.failFrames = [];
         this.images.successFrames = [];
 
@@ -221,7 +253,7 @@ class CatDashGame {
             if (img.decode) img.decode().catch(() => {});
             this.images.failFrames[i - 1] = img;
         }
-        for (let i = 1; i <= 16; i++) {
+        for (let i = 1; i <= 21; i++) {
             const img = new Image();
             img.src = `assets/level-animations/cat_dash_success/Cat_Dash_Cat-${i}.png`;
             if (img.decode) img.decode().catch(() => {});
@@ -240,7 +272,10 @@ class CatDashGame {
 
             const img = new Image();
             img.onload = () => {
-                if (key.startsWith('catFrame')) {
+                if (key.startsWith('catAfterPortalFrame')) {
+                    const frameNum = parseInt(key.replace('catAfterPortalFrame', ''));
+                    this.images.catAfterPortalFrames[frameNum - 1] = img;
+                } else if (key.startsWith('catFrame')) {
                     const frameNum = parseInt(key.replace('catFrame', ''));
                     this.images.catFrames[frameNum - 1] = img;
                 } else if (key.startsWith('sparkleFrame')) {
@@ -252,6 +287,15 @@ class CatDashGame {
                 } else if (key.startsWith('portalFrame')) {
                     const frameNum = parseInt(key.replace('portalFrame', ''));
                     this.images.portalFrames[frameNum - 1] = img;
+                } else if (key.startsWith('fishFrame')) {
+                    const frameNum = parseInt(key.replace('fishFrame', ''));
+                    this.images.fishFrames[frameNum - 1] = img;
+                } else if (key.startsWith('coinFrame')) {
+                    const frameNum = parseInt(key.replace('coinFrame', ''));
+                    this.images.coinFrames[frameNum - 1] = img;
+                } else if (key.startsWith('shieldFrame')) {
+                    const frameNum = parseInt(key.replace('shieldFrame', ''));
+                    this.images.shieldFrames[frameNum - 1] = img;
                 } else {
                     this.images[key] = img;
                 }
@@ -675,7 +719,7 @@ class CatDashGame {
             const livesLeft = document.getElementById('lives-left');
             if (livesLeft) livesLeft.textContent = this.lives;
             if (tryAgainScreen) { tryAgainScreen.classList.remove('hidden'); tryAgainScreen.style.display = 'flex'; }
-            this.startScreenAnim('fail-anim-try-again', this.images.failFrames);
+            this.startScreenAnim('fail-anim-try-again', this.images.failFrames, 8);
             this.showFailObstacle(obstacle);
             document.getElementById('pause-button').classList.add('hidden');
         }
@@ -758,7 +802,7 @@ class CatDashGame {
         if (levelClearNumber) levelClearNumber.textContent = this.currentLevel;
         if (levelClearScreen) { levelClearScreen.classList.remove('hidden'); levelClearScreen.style.removeProperty('display'); levelClearScreen.style.display = 'flex'; }
         document.getElementById('pause-button').classList.add('hidden');
-        this.startScreenAnim('success-anim-level-clear', this.images.successFrames);
+        this.startScreenAnim('success-anim-level-clear', this.images.successFrames, 8);
     }
 
     goToStartScreen() {
@@ -824,7 +868,7 @@ class CatDashGame {
 
         const gameOverScreen = document.getElementById('game-over-screen');
         if (gameOverScreen) { gameOverScreen.classList.remove('hidden'); gameOverScreen.style.display = 'flex'; }
-        this.startScreenAnim('fail-anim-game-over', this.images.failFrames);
+        this.startScreenAnim('fail-anim-game-over', this.images.failFrames, 8);
         document.getElementById('pause-button').classList.add('hidden');
         document.getElementById('personal-best-display').style.display = 'none';
         this.showUI(false);
@@ -896,11 +940,12 @@ class CatDashGame {
         }
 
         // Update cat animation
-        if (this.images.catFrames && this.images.catFrames.length > 0) {
+        const activeCatFrames = this.getActiveCatFrames();
+        if (activeCatFrames && activeCatFrames.length > 0) {
             this.catAnimationTimer += deltaTime;
             if (this.catAnimationTimer > 70) {
                 this.catAnimationTimer = 0;
-                const maxFrames = this.images.catFrames.filter(f => f && f.complete).length;
+                const maxFrames = activeCatFrames.filter(f => f && f.complete).length;
                 if (maxFrames > 0) {
                     this.catAnimationFrame = (this.catAnimationFrame + 1) % maxFrames;
                 }
@@ -1046,6 +1091,36 @@ class CatDashGame {
                     collectible.sparkleTimer = 0;
                     if (this.images.sparkleFrames && this.images.sparkleFrames.length > 0) {
                         collectible.sparkleFrame = (collectible.sparkleFrame + 1) % this.images.sparkleFrames.length;
+                    }
+                }
+            }
+
+            if (collectible.type === 'coin' && collectible.coinFrame !== undefined) {
+                collectible.coinTimer += deltaTime;
+                if (collectible.coinTimer >= collectible.coinFrameDuration) {
+                    collectible.coinTimer = 0;
+                    if (this.images.coinFrames && this.images.coinFrames.length > 0) {
+                        collectible.coinFrame = (collectible.coinFrame + 1) % this.images.coinFrames.length;
+                    }
+                }
+            }
+
+            if (collectible.type === 'treat' && collectible.fishFrame !== undefined) {
+                collectible.fishTimer += deltaTime;
+                if (collectible.fishTimer >= collectible.fishFrameDuration) {
+                    collectible.fishTimer = 0;
+                    if (this.images.fishFrames && this.images.fishFrames.length > 0) {
+                        collectible.fishFrame = (collectible.fishFrame + 1) % this.images.fishFrames.length;
+                    }
+                }
+            }
+
+            if (collectible.type === 'shield' && collectible.shieldFrame !== undefined) {
+                collectible.shieldTimer += deltaTime;
+                if (collectible.shieldTimer >= collectible.shieldFrameDuration) {
+                    collectible.shieldTimer = 0;
+                    if (this.images.shieldFrames && this.images.shieldFrames.length > 0) {
+                        collectible.shieldFrame = (collectible.shieldFrame + 1) % this.images.shieldFrames.length;
                     }
                 }
             }
@@ -1227,6 +1302,17 @@ class CatDashGame {
                     collectible.sparkleFrame = 0;
                     collectible.sparkleTimer = 0;
                     collectible.sparkleFrameDuration = 100;
+                    collectible.coinFrame = 0;
+                    collectible.coinTimer = 0;
+                    collectible.coinFrameDuration = 90;
+                } else if (type === 'treat') {
+                    collectible.fishFrame = 0;
+                    collectible.fishTimer = 0;
+                    collectible.fishFrameDuration = 120;
+                } else if (type === 'shield') {
+                    collectible.shieldFrame = 0;
+                    collectible.shieldTimer = 0;
+                    collectible.shieldFrameDuration = 90;
                 }
                 this.collectibles.push(collectible);
                 spawned = true;
@@ -1521,6 +1607,14 @@ class CatDashGame {
         }
     }
 
+    getActiveCatFrames() {
+        if (this.destination && this.destination.visible &&
+            this.images.catAfterPortalFrames && this.images.catAfterPortalFrames.length > 0) {
+            return this.images.catAfterPortalFrames;
+        }
+        return this.images.catFrames;
+    }
+
     drawPlayer() {
         const p = this.player;
         this.ctx.save();
@@ -1534,8 +1628,9 @@ class CatDashGame {
         }
 
         // Try individual frame files first, then sprite sheet, then static, then placeholder
-        if (this.images.catFrames && this.images.catFrames.length > 0) {
-            const frame = this.images.catFrames[this.catAnimationFrame % this.images.catFrames.length];
+        const activeCatFrames = this.getActiveCatFrames();
+        if (activeCatFrames && activeCatFrames.length > 0) {
+            const frame = activeCatFrames[this.catAnimationFrame % activeCatFrames.length];
             if (frame && frame.complete && frame.width > 0) {
                 this.ctx.drawImage(frame, p.x - p.width / 2, p.y - p.height / 2, p.width, p.height);
             } else {
@@ -1722,37 +1817,47 @@ class CatDashGame {
                         this.ctx.globalAlpha = 1.0;
                     }
                 }
-                if (this.images.coinImage && this.imagesLoaded) {
-                    this.ctx.drawImage(this.images.coinImage, -item.width / 2, -item.height / 2, item.width, item.height);
-                } else {
-                    this.ctx.fillStyle = '#fdcb6e';
-                    this.ctx.beginPath();
-                    this.ctx.arc(0, 0, item.width / 2, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    this.ctx.strokeStyle = '#e17055';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.stroke();
-                    this.ctx.fillStyle = '#e17055';
-                    this.ctx.font = 'bold 18px Arial';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText('$', 0, 6);
+                {
+                    const coinFrame = this.images.coinFrames && this.images.coinFrames[item.coinFrame || 0];
+                    if (coinFrame && coinFrame.complete && coinFrame.width > 0) {
+                        this.ctx.drawImage(coinFrame, -item.width / 2, -item.height / 2, item.width, item.height);
+                    } else {
+                        this.ctx.fillStyle = '#fdcb6e';
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, item.width / 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.strokeStyle = '#e17055';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.stroke();
+                        this.ctx.fillStyle = '#e17055';
+                        this.ctx.font = 'bold 18px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText('$', 0, 6);
+                    }
                 }
                 break;
 
-            case 'treat':
-                this.ctx.fillStyle = '#00b894';
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, item.width / 2, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.fillStyle = '#fff';
-                this.ctx.font = 'bold 20px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('\u{1F41F}', 0, 6);
+            case 'treat': {
+                const fishFrame = this.images.fishFrames && this.images.fishFrames[item.fishFrame || 0];
+                if (fishFrame && fishFrame.complete && fishFrame.width > 0) {
+                    this.ctx.drawImage(fishFrame, -item.width / 2, -item.height / 2, item.width, item.height);
+                } else {
+                    this.ctx.fillStyle = '#00b894';
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, item.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = 'bold 20px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('\u{1F41F}', 0, 6);
+                }
                 break;
+            }
 
-            case 'shield':
-                if (this.images.shieldImage && this.imagesLoaded) {
-                    this.ctx.drawImage(this.images.shieldImage, -item.width / 2, -item.height / 2, item.width, item.height);
+            case 'shield': {
+                const shieldFrame = this.images.shieldFrames && this.images.shieldFrames[item.shieldFrame || 0];
+                if (shieldFrame && shieldFrame.complete && shieldFrame.width > 0) {
+                    this.ctx.drawImage(shieldFrame, -item.width / 2, -item.height / 2, item.width, item.height);
                 } else {
                     this.ctx.strokeStyle = '#0984e3';
                     this.ctx.fillStyle = '#0984e3';
@@ -1777,6 +1882,7 @@ class CatDashGame {
                     this.ctx.stroke();
                 }
                 break;
+            }
         }
 
         this.ctx.restore();
