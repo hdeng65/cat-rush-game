@@ -111,6 +111,7 @@ class CatDashGame {
             roombaHit: null
         };
         this.audioPool = {};
+        this.muted = localStorage.getItem('catRushMuted') === 'true';
         this.loadAudio();
 
         // Background music: two tracks, switched only at musical phrase boundaries
@@ -132,6 +133,9 @@ class CatDashGame {
             y: 100,
             width: 100,
             height: 100,
+            // Hitbox is shrunk to match the cat's visible pixels (PNG has transparent padding)
+            hitScaleX: 0.6,
+            hitScaleY: 0.55,
             targetLane: 2,
             currentLane: 2,
             laneWidth: this.canvas.width / 5,
@@ -650,6 +654,31 @@ class CatDashGame {
         document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit());
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
 
+        // Home-screen modals (leaderboard + help)
+        const openLeaderboard = document.getElementById('open-leaderboard');
+        if (openLeaderboard) {
+            openLeaderboard.addEventListener('click', () => {
+                this.openModal('leaderboard-modal');
+                this.loadStartScreenLeaderboard();
+            });
+        }
+        const openHelp = document.getElementById('open-help');
+        if (openHelp) {
+            openHelp.addEventListener('click', () => this.openModal('help-modal'));
+        }
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay || e.target.hasAttribute('data-close-modal')) {
+                    overlay.classList.add('hidden');
+                }
+            });
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(o => o.classList.add('hidden'));
+            }
+        });
+
         // Pre-fill name input from localStorage (Game Clear screen only)
         const storedName = getStoredPlayerName();
         if (storedName) {
@@ -663,6 +692,11 @@ class CatDashGame {
 
     showUI(visible) {
         document.getElementById('ui-container').style.display = visible ? '' : 'none';
+    }
+
+    openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('hidden');
     }
 
     startGame() {
@@ -1255,8 +1289,9 @@ class CatDashGame {
             }
         }
 
-        // Check destination collision
-        if (this.destination && this.destination.visible && this.checkCollision(this.player, this.destination)) {
+        // Check destination collision - require the cat to get close to the portal's
+        // center rather than just touching its edge, so it visibly enters the portal
+        if (this.destination && this.destination.visible && this.checkProximity(this.player, this.destination)) {
             if (this.state === 'playing') {
                 this.state = 'levelComplete';
                 this.createParticles(this.destination.x, this.destination.y, '#00b894', 'success');
@@ -1349,6 +1384,7 @@ class CatDashGame {
                     this.obstacles.push({
                         x, y,
                         width: size.width, height: size.height,
+                        hitScale: 0.85,
                         type: 'roomba', size: 'medium',
                         speed: 0.5 + Math.random() * 0.5,
                         direction: Math.random() < 0.5 ? -1 : 1,
@@ -1368,6 +1404,7 @@ class CatDashGame {
                     this.obstacles.push({
                         x: obstacleX, y,
                         width: size.width, height: size.height,
+                        hitScale: 0.8,
                         type: types[Math.floor(Math.random() * types.length)],
                         size: sizeType
                     });
@@ -1404,7 +1441,7 @@ class CatDashGame {
             const collectibleSize = 35;
 
             if (!this.checkOverlap(x, y, collectibleSize, collectibleSize, 60)) {
-                const collectible = { x, y, width: collectibleSize, height: collectibleSize, type };
+                const collectible = { x, y, width: collectibleSize, height: collectibleSize, hitScale: 1.2, type };
                 if (type === 'coin') {
                     collectible.sparkleFrame = 0;
                     collectible.sparkleTimer = 0;
@@ -1480,16 +1517,38 @@ class CatDashGame {
     }
 
     checkCollision(obj1, obj2) {
-        // Center-based AABB collision
-        const o1Left = obj1.x - obj1.width / 2;
-        const o1Right = obj1.x + obj1.width / 2;
-        const o1Top = obj1.y - obj1.height / 2;
-        const o1Bottom = obj1.y + obj1.height / 2;
-        const o2Left = obj2.x - obj2.width / 2;
-        const o2Right = obj2.x + obj2.width / 2;
-        const o2Top = obj2.y - obj2.height / 2;
-        const o2Bottom = obj2.y + obj2.height / 2;
+        // Center-based AABB collision using effective (scaled) hitboxes.
+        // PNG sprites include transparent padding, so we shrink each object's box
+        // to match its visible art (hitScaleX/hitScaleY, or a uniform hitScale).
+        const s1x = obj1.hitScaleX ?? obj1.hitScale ?? 1;
+        const s1y = obj1.hitScaleY ?? obj1.hitScale ?? 1;
+        const s2x = obj2.hitScaleX ?? obj2.hitScale ?? 1;
+        const s2y = obj2.hitScaleY ?? obj2.hitScale ?? 1;
+
+        const o1hw = (obj1.width * s1x) / 2;
+        const o1hh = (obj1.height * s1y) / 2;
+        const o2hw = (obj2.width * s2x) / 2;
+        const o2hh = (obj2.height * s2y) / 2;
+
+        const o1Left = obj1.x - o1hw;
+        const o1Right = obj1.x + o1hw;
+        const o1Top = obj1.y - o1hh;
+        const o1Bottom = obj1.y + o1hh;
+        const o2Left = obj2.x - o2hw;
+        const o2Right = obj2.x + o2hw;
+        const o2Top = obj2.y - o2hh;
+        const o2Bottom = obj2.y + o2hh;
         return o1Left < o2Right && o1Right > o2Left && o1Top < o2Bottom && o1Bottom > o2Top;
+    }
+
+    checkProximity(obj1, obj2) {
+        // Distance-based check between object centers - used where we want objects
+        // to get near each other's center (not just overlap edges) before triggering
+        const dx = obj1.x - obj2.x;
+        const dy = obj1.y - obj2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const threshold = (Math.min(obj1.width, obj1.height) / 2 + Math.min(obj2.width, obj2.height) / 2) * 0.4;
+        return distance < threshold;
     }
 
     createParticles(x, y, color, type = 'default') {
