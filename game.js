@@ -475,6 +475,34 @@ class CatDashGame {
         }
     }
 
+    // Pause the current track but keep its position so it can resume.
+    pauseMusic() {
+        this.cancelMusicSwitchWatcher();
+        const track = this.currentMusicName && this.music[this.currentMusicName];
+        if (track) track.pause();
+    }
+
+    // Resume the track that was paused, or start the desired one if none is active.
+    resumeMusic() {
+        const track = this.currentMusicName && this.music[this.currentMusicName];
+        if (track) {
+            track.play().catch(() => {});
+        } else {
+            this.playMusicTrack(this.desiredMusicName);
+        }
+    }
+
+    // Fully stop background music (used when the run ends).
+    stopMusic() {
+        this.cancelMusicSwitchWatcher();
+        Object.values(this.music).forEach(track => {
+            if (!track) return;
+            track.pause();
+            track.currentTime = 0;
+        });
+        this.currentMusicName = null;
+    }
+
     setupInput() {
         document.addEventListener('keydown', (e) => {
             this.keys[e.key.toLowerCase()] = true;
@@ -867,9 +895,11 @@ class CatDashGame {
         if (this.state === 'playing') {
             this.state = 'paused';
             document.getElementById('pause-button').textContent = 'Resume';
+            this.pauseMusic();
         } else if (this.state === 'paused') {
             this.state = 'playing';
             document.getElementById('pause-button').textContent = 'Pause';
+            this.resumeMusic();
         }
     }
 
@@ -1046,6 +1076,7 @@ class CatDashGame {
     gameClear() {
         this.state = 'gameClear';
         this.scoreSubmitted = false;
+        this.stopMusic();
         this.playSound('gameClear', 0.8);
 
         const tryAgainScreen = document.getElementById('try-again-screen');
