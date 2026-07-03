@@ -86,6 +86,7 @@ class CatDashGame {
             obstacleSmall: null,
             obstacleMedium: null,
             obstacleBig: null,
+            shieldEffect: null,
             portalFrames: [],
             sparkleFrames: [],
             roombaFrames: [],
@@ -111,6 +112,16 @@ class CatDashGame {
         };
         this.audioPool = {};
         this.loadAudio();
+
+        // Background music: two tracks, switched only at musical phrase boundaries
+        this.music = {};
+        this.currentMusicName = null;
+        this.desiredMusicName = 'main';
+        this.musicVolume = 0.35;
+        // Both tracks are built of fixed-length phrases; switches land on these
+        this.musicPhraseSeconds = { main: 3.2, portal: 2.75 };
+        this.musicSwitchWatcher = null;
+        this.initMusic();
         this.catAnimationFrame = 0;
         this.catAnimationTimer = 0;
         this.catIsMoving = false;
@@ -174,7 +185,8 @@ class CatDashGame {
             catSprite: ['assets/cat_spritesheet.webp', 'assets/cat_spritesheet.PNG', 'assets/cat_spritesheet.png'],
             obstacleSmall: ['assets/obstacle_small.png', 'assets/obstacle_small.PNG'],
             obstacleMedium: ['assets/obstacle_medium.png', 'assets/obstacle_medium.PNG'],
-            obstacleBig: ['assets/obstacle_big.png', 'assets/obstacle_big.PNG']
+            obstacleBig: ['assets/obstacle_big.png', 'assets/obstacle_big.PNG'],
+            shieldEffect: ['assets/shield effect.png', 'assets/shield effect.PNG']
         };
 
         for (let i = 1; i <= 4; i++) {
@@ -355,6 +367,97 @@ class CatDashGame {
         clone.currentTime = 0;
         clone.volume = volume;
         clone.play().catch(() => {});
+    }
+
+    initMusic() {
+        const tracks = {
+            main: 'audio/cat-dash-song.wav',
+            portal: 'audio/cat-dash-after-portal-opens.wav'
+        };
+
+        Object.keys(tracks).forEach(name => {
+            const audio = new Audio(tracks[name]);
+            audio.preload = 'auto';
+            audio.volume = this.musicVolume;
+            // Loop manually via 'ended' so a pending track switch takes
+            // effect exactly at the end of a loop.
+            audio.loop = false;
+            audio.addEventListener('ended', () => {
+                if (this.currentMusicName === name) {
+                    this.playMusicTrack(this.desiredMusicName);
+                }
+            });
+            this.music[name] = audio;
+        });
+
+        // Autoplay is usually blocked until the first user gesture,
+        // so retry on the first interaction.
+        const startMusic = () => {
+            if (!this.currentMusicName) this.playMusicTrack(this.desiredMusicName);
+        };
+        startMusic();
+        const onFirstGesture = () => {
+            document.removeEventListener('pointerdown', onFirstGesture);
+            document.removeEventListener('keydown', onFirstGesture);
+            startMusic();
+        };
+        document.addEventListener('pointerdown', onFirstGesture);
+        document.addEventListener('keydown', onFirstGesture);
+    }
+
+    playMusicTrack(name) {
+        const track = this.music[name];
+        if (!track) return;
+        this.cancelMusicSwitchWatcher();
+        Object.keys(this.music).forEach(other => {
+            if (other !== name) this.music[other].pause();
+        });
+        this.currentMusicName = name;
+        track.currentTime = 0;
+        track.play().catch(() => {
+            // Autoplay blocked; the first-gesture handler will retry.
+            if (this.currentMusicName === name) this.currentMusicName = null;
+        });
+    }
+
+    // Request a track change; it takes effect at the end of the current
+    // musical phrase so the connector lands on a loop boundary.
+    setMusic(name) {
+        this.desiredMusicName = name;
+        if (!this.currentMusicName) {
+            this.playMusicTrack(name);
+        } else if (name === this.currentMusicName) {
+            this.cancelMusicSwitchWatcher();
+        } else {
+            this.startMusicSwitchWatcher();
+        }
+    }
+
+    startMusicSwitchWatcher() {
+        if (this.musicSwitchWatcher) return;
+        const track = this.music[this.currentMusicName];
+        const phrase = this.musicPhraseSeconds[this.currentMusicName];
+        if (!track || !phrase) return;
+
+        const boundary = Math.ceil((track.currentTime + 0.05) / phrase) * phrase;
+        this.musicSwitchWatcher = setInterval(() => {
+            // Switch already happened (e.g. via 'ended') or was cancelled
+            if (this.desiredMusicName === this.currentMusicName) {
+                this.cancelMusicSwitchWatcher();
+                return;
+            }
+            const cur = this.music[this.currentMusicName];
+            if (cur && cur.currentTime >= boundary) {
+                this.playMusicTrack(this.desiredMusicName);
+            }
+        }, 25);
+    }
+
+    cancelMusicSwitchWatcher() {
+        if (this.musicSwitchWatcher) {
+            clearInterval(this.musicSwitchWatcher);
+            this.musicSwitchWatcher = null;
+        }
     }
 
     setupInput() {
@@ -586,6 +689,7 @@ class CatDashGame {
     }
 
     resetGame() {
+        this.setMusic('main');
         this.score = 0;
         this.currentLevel = 1;
         this.gameTime = 0;
@@ -705,6 +809,7 @@ class CatDashGame {
 
     loseLife(obstacle = null) {
         this.state = 'tryAgain';
+        this.setMusic('main');
         this.obstacles = [];
         this.collectibles = [];
         this.particles = [];
@@ -797,6 +902,7 @@ class CatDashGame {
 
     showLevelClear() {
         this.state = 'levelClear';
+        this.setMusic('main');
         const levelClearScreen = document.getElementById('level-clear-screen');
         const levelClearNumber = document.getElementById('level-clear-number');
         if (levelClearNumber) levelClearNumber.textContent = this.currentLevel;
@@ -1358,6 +1464,7 @@ class CatDashGame {
                 if (this.treatsCollected >= this.treatsNeeded && this.destination && !this.destination.visible) {
                     this.destination.visible = true;
                     this.createFeedback("Portal opened!", this.canvas.width / 2, this.canvas.height / 2, '#0984e3');
+                    this.setMusic('portal');
                 }
                 break;
             }
@@ -1619,14 +1726,6 @@ class CatDashGame {
         const p = this.player;
         this.ctx.save();
 
-        if (p.hasShield) {
-            this.ctx.strokeStyle = '#0984e3';
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.width / 2 + 10, 0, Math.PI * 2);
-            this.ctx.stroke();
-        }
-
         // Try individual frame files first, then sprite sheet, then static, then placeholder
         const activeCatFrames = this.getActiveCatFrames();
         if (activeCatFrames && activeCatFrames.length > 0) {
@@ -1654,6 +1753,22 @@ class CatDashGame {
             );
         } else {
             this.drawCatFallback(p);
+        }
+
+        // Bubble drawn over the cat: its interior is transparent, so the
+        // cat shows through and the rim wraps around it
+        if (p.hasShield) {
+            const effect = this.images.shieldEffect;
+            if (effect && effect.complete && effect.width > 0) {
+                const size = p.width * 1.5;
+                this.ctx.drawImage(effect, p.x - size / 2, p.y - size / 2, size, size);
+            } else {
+                this.ctx.strokeStyle = '#0984e3';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.width / 2 + 10, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
         }
 
         this.ctx.restore();
