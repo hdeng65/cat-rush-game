@@ -355,6 +355,7 @@ class CatDashGame {
     }
 
     playSound(soundName, volume = 0.7, maxDuration = null) {
+        if (this.muted) return;
         const sound = this.audio[soundName];
         if (!sound) return;
 
@@ -392,6 +393,7 @@ class CatDashGame {
             const audio = new Audio(tracks[name]);
             audio.preload = 'auto';
             audio.volume = this.musicVolume;
+            audio.muted = this.muted;
             // Loop manually via 'ended' so a pending track switch takes
             // effect exactly at the end of a loop.
             audio.loop = false;
@@ -654,6 +656,12 @@ class CatDashGame {
         document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit());
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
 
+        const muteButton = document.getElementById('mute-button');
+        if (muteButton) {
+            this.updateMuteButton();
+            muteButton.addEventListener('click', () => this.toggleMute());
+        }
+
         // Home-screen modals (leaderboard + help)
         const openLeaderboard = document.getElementById('open-leaderboard');
         if (openLeaderboard) {
@@ -697,6 +705,23 @@ class CatDashGame {
     openModal(id) {
         const modal = document.getElementById(id);
         if (modal) modal.classList.remove('hidden');
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('catRushMuted', this.muted);
+        // Keep background music tracks in sync with the mute state
+        Object.values(this.music).forEach(track => { if (track) track.muted = this.muted; });
+        this.updateMuteButton();
+    }
+
+    updateMuteButton() {
+        const muteButton = document.getElementById('mute-button');
+        if (!muteButton) return;
+        muteButton.textContent = this.muted ? '🔇' : '🔊';
+        muteButton.classList.toggle('muted', this.muted);
+        muteButton.title = this.muted ? 'Unmute music' : 'Mute music';
+        muteButton.setAttribute('aria-label', this.muted ? 'Unmute music' : 'Mute music');
     }
 
     startGame() {
