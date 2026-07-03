@@ -294,7 +294,7 @@ class CatDashGame {
         Object.keys(audioPaths).forEach(key => loadAudioFile(key, audioPaths[key]));
     }
 
-    playSound(soundName, volume = 0.7) {
+    playSound(soundName, volume = 0.7, maxDuration = null) {
         const sound = this.audio[soundName];
         if (!sound) return;
 
@@ -308,9 +308,18 @@ class CatDashGame {
         }
         if (!clone) clone = pool[0];
 
+        if (clone._stopTimer) { clearTimeout(clone._stopTimer); clone._stopTimer = null; }
+
         clone.currentTime = 0;
         clone.volume = volume;
         clone.play().catch(() => {});
+
+        if (maxDuration) {
+            clone._stopTimer = setTimeout(() => {
+                clone.pause();
+                clone.currentTime = 0;
+            }, maxDuration * 1000);
+        }
     }
 
     setupInput() {
@@ -447,13 +456,13 @@ class CatDashGame {
         if (sign !== 0) {
             if (this.joystick.wasPastHThreshold !== sign) {
                 this.movePlayer(sign);
-                this.joystick.hStepCooldown = 180;
+                this.joystick.hStepCooldown = 350;
                 this.joystick.wasPastHThreshold = sign;
             } else {
                 this.joystick.hStepCooldown -= deltaTime;
                 if (this.joystick.hStepCooldown <= 0) {
                     this.movePlayer(sign);
-                    this.joystick.hStepCooldown = 180;
+                    this.joystick.hStepCooldown = 350;
                 }
             }
         } else {
@@ -1015,12 +1024,12 @@ class CatDashGame {
                 if (this.player.hasShield) {
                     this.player.hasShield = false;
                     this.player.shieldTime = 0;
-                    this.playSound(obstacle.type === 'roomba' ? 'roombaHit' : 'obstacleHit', 0.4);
+                    this.playSound('obstacleHit', 0.4);
                     this.createFeedback("Shield Used!", obstacle.x, obstacle.y);
                     this.createParticles(obstacle.x, obstacle.y, '#00b894');
                     this.obstacles.splice(i, 1);
                 } else {
-                    this.playSound(obstacle.type === 'roomba' ? 'roombaHit' : 'obstacleHit', 0.6);
+                    this.playSound('obstacleHit', 0.6);
                     this.loseLife(obstacle);
                     return;
                 }
