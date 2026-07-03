@@ -119,7 +119,7 @@ class CatDashGame {
         this.desiredMusicName = 'main';
         this.musicVolume = 0.35;
         // Both tracks are built of fixed-length phrases; switches land on these
-        this.musicPhraseSeconds = { main: 3.2, portal: 2.75 };
+        this.musicPhraseSeconds = { main: 3.2, portal: 10.6667 / 4 };
         this.musicSwitchWatcher = null;
         this.initMusic();
         this.catAnimationFrame = 0;
