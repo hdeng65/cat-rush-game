@@ -402,8 +402,8 @@ button:active {
 
 #pause-button {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
+    bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    right: calc(15px + env(safe-area-inset-right, 0px));
     padding: 10px 20px;
     font-size: 16px;
     font-weight: 700;
@@ -1057,8 +1057,8 @@ button:active {
 #joystick {
     display: none;
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
     width: 130px;
     height: 130px;
     border-radius: 50%;
@@ -1095,7 +1095,8 @@ button:active {
     /* Move pause button to left so it doesn't overlap joystick */
     #pause-button {
         right: auto;
-        left: 15px;
+        left: calc(15px + env(safe-area-inset-left, 0px));
+        bottom: calc(15px + env(safe-area-inset-bottom, 0px));
     }
 }
 
