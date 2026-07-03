@@ -31,13 +31,13 @@ class CatDashGame {
         this.currentLevel = 1;
         this.maxLevel = 3;
         this.levelTime = 0;
-        this.levelTimeLimit = 30000;
+        this.levelTimeLimit = 60000;
         this.levelTransitionTimer = 0;
         this.levelTransitionDuration = 2000;
 
         this.levelConfig = {
             1: {
-                timeLimit: 30000,
+                timeLimit: 60000,
                 baseSpeed: 1.0,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.3,
@@ -49,7 +49,7 @@ class CatDashGame {
                 description: 'Collect 5 treats to open the portal!'
             },
             2: {
-                timeLimit: 45000,
+                timeLimit: 60000,
                 baseSpeed: 1.3,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.4,
@@ -111,6 +111,7 @@ class CatDashGame {
             roombaHit: null
         };
         this.audioPool = {};
+        this.muted = localStorage.getItem('catRushMuted') === 'true';
         this.loadAudio();
 
         // Background music: two tracks, switched only at musical phrase boundaries
@@ -132,6 +133,9 @@ class CatDashGame {
             y: 100,
             width: 100,
             height: 100,
+            // Hitbox is shrunk to match the cat's visible pixels (PNG has transparent padding)
+            hitScaleX: 0.6,
+            hitScaleY: 0.55,
             targetLane: 2,
             currentLane: 2,
             laneWidth: this.canvas.width / 5,
@@ -350,7 +354,8 @@ class CatDashGame {
         Object.keys(audioPaths).forEach(key => loadAudioFile(key, audioPaths[key]));
     }
 
-    playSound(soundName, volume = 0.7) {
+    playSound(soundName, volume = 0.7, maxDuration = null) {
+        if (this.muted) return;
         const sound = this.audio[soundName];
         if (!sound) return;
 
@@ -364,9 +369,18 @@ class CatDashGame {
         }
         if (!clone) clone = pool[0];
 
+        if (clone._stopTimer) { clearTimeout(clone._stopTimer); clone._stopTimer = null; }
+
         clone.currentTime = 0;
         clone.volume = volume;
         clone.play().catch(() => {});
+
+        if (maxDuration) {
+            clone._stopTimer = setTimeout(() => {
+                clone.pause();
+                clone.currentTime = 0;
+            }, maxDuration * 1000);
+        }
     }
 
     initMusic() {
@@ -379,6 +393,7 @@ class CatDashGame {
             const audio = new Audio(tracks[name]);
             audio.preload = 'auto';
             audio.volume = this.musicVolume;
+            audio.muted = this.muted;
             // Loop manually via 'ended' so a pending track switch takes
             // effect exactly at the end of a loop.
             audio.loop = false;
@@ -594,13 +609,13 @@ class CatDashGame {
         if (sign !== 0) {
             if (this.joystick.wasPastHThreshold !== sign) {
                 this.movePlayer(sign);
-                this.joystick.hStepCooldown = 180;
+                this.joystick.hStepCooldown = 350;
                 this.joystick.wasPastHThreshold = sign;
             } else {
                 this.joystick.hStepCooldown -= deltaTime;
                 if (this.joystick.hStepCooldown <= 0) {
                     this.movePlayer(sign);
-                    this.joystick.hStepCooldown = 180;
+                    this.joystick.hStepCooldown = 350;
                 }
             }
         } else {
@@ -637,16 +652,45 @@ class CatDashGame {
         document.getElementById('restart-button').addEventListener('click', () => this.restart());
         document.getElementById('clear-restart-button').addEventListener('click', () => this.restart());
         document.getElementById('next-level-button').addEventListener('click', () => this.advanceFromLevelClear());
-        document.getElementById('submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-over'));
-        document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit('game-clear'));
+        // Score submission only happens on Game Clear (finishing all levels), not Game Over
+        document.getElementById('clear-submit-score-button').addEventListener('click', () => this.handleScoreSubmit());
         document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
 
-        // Pre-fill name inputs from localStorage
+        const muteButton = document.getElementById('mute-button');
+        if (muteButton) {
+            this.updateMuteButton();
+            muteButton.addEventListener('click', () => this.toggleMute());
+        }
+
+        // Home-screen modals (leaderboard + help)
+        const openLeaderboard = document.getElementById('open-leaderboard');
+        if (openLeaderboard) {
+            openLeaderboard.addEventListener('click', () => {
+                this.openModal('leaderboard-modal');
+                this.loadStartScreenLeaderboard();
+            });
+        }
+        const openHelp = document.getElementById('open-help');
+        if (openHelp) {
+            openHelp.addEventListener('click', () => this.openModal('help-modal'));
+        }
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay || e.target.hasAttribute('data-close-modal')) {
+                    overlay.classList.add('hidden');
+                }
+            });
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(o => o.classList.add('hidden'));
+            }
+        });
+
+        // Pre-fill name input from localStorage (Game Clear screen only)
         const storedName = getStoredPlayerName();
         if (storedName) {
-            const nameInput = document.getElementById('player-name-input');
             const clearNameInput = document.getElementById('clear-player-name-input');
-            if (nameInput) nameInput.value = storedName;
             if (clearNameInput) clearNameInput.value = storedName;
         }
 
@@ -656,6 +700,28 @@ class CatDashGame {
 
     showUI(visible) {
         document.getElementById('ui-container').style.display = visible ? '' : 'none';
+    }
+
+    openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('catRushMuted', this.muted);
+        // Keep background music tracks in sync with the mute state
+        Object.values(this.music).forEach(track => { if (track) track.muted = this.muted; });
+        this.updateMuteButton();
+    }
+
+    updateMuteButton() {
+        const muteButton = document.getElementById('mute-button');
+        if (!muteButton) return;
+        muteButton.textContent = this.muted ? '🔇' : '🔊';
+        muteButton.classList.toggle('muted', this.muted);
+        muteButton.title = this.muted ? 'Unmute music' : 'Mute music';
+        muteButton.setAttribute('aria-label', this.muted ? 'Unmute music' : 'Mute music');
     }
 
     startGame() {
@@ -966,12 +1032,6 @@ class CatDashGame {
         const messages = ["Meow! That was fun!", "Purr-fect try!", "You're a star!", "Amazing run!"];
         document.getElementById('feedback-message').textContent = messages[Math.floor(Math.random() * messages.length)];
 
-        // Pre-fill name
-        const storedName = getStoredPlayerName();
-        const nameInput = document.getElementById('player-name-input');
-        if (storedName && nameInput) nameInput.value = storedName;
-        document.getElementById('name-error').textContent = '';
-
         const gameOverScreen = document.getElementById('game-over-screen');
         if (gameOverScreen) { gameOverScreen.classList.remove('hidden'); gameOverScreen.style.display = 'flex'; }
         this.startScreenAnim('fail-anim-game-over', this.images.failFrames, 8);
@@ -1174,12 +1234,12 @@ class CatDashGame {
                 if (this.player.hasShield) {
                     this.player.hasShield = false;
                     this.player.shieldTime = 0;
-                    this.playSound(obstacle.type === 'roomba' ? 'roombaHit' : 'obstacleHit', 0.4);
+                    this.playSound('obstacleHit', 0.4);
                     this.createFeedback("Shield Used!", obstacle.x, obstacle.y);
                     this.createParticles(obstacle.x, obstacle.y, '#00b894');
                     this.obstacles.splice(i, 1);
                 } else {
-                    this.playSound(obstacle.type === 'roomba' ? 'roombaHit' : 'obstacleHit', 0.6);
+                    this.playSound('obstacleHit', 0.6);
                     this.loseLife(obstacle);
                     return;
                 }
@@ -1254,8 +1314,9 @@ class CatDashGame {
             }
         }
 
-        // Check destination collision
-        if (this.destination && this.destination.visible && this.checkCollision(this.player, this.destination)) {
+        // Check destination collision - require the cat to get close to the portal's
+        // center rather than just touching its edge, so it visibly enters the portal
+        if (this.destination && this.destination.visible && this.checkProximity(this.player, this.destination)) {
             if (this.state === 'playing') {
                 this.state = 'levelComplete';
                 this.createParticles(this.destination.x, this.destination.y, '#00b894', 'success');
@@ -1348,6 +1409,7 @@ class CatDashGame {
                     this.obstacles.push({
                         x, y,
                         width: size.width, height: size.height,
+                        hitScale: 0.85,
                         type: 'roomba', size: 'medium',
                         speed: 0.5 + Math.random() * 0.5,
                         direction: Math.random() < 0.5 ? -1 : 1,
@@ -1367,6 +1429,7 @@ class CatDashGame {
                     this.obstacles.push({
                         x: obstacleX, y,
                         width: size.width, height: size.height,
+                        hitScale: 0.8,
                         type: types[Math.floor(Math.random() * types.length)],
                         size: sizeType
                     });
@@ -1403,7 +1466,7 @@ class CatDashGame {
             const collectibleSize = 35;
 
             if (!this.checkOverlap(x, y, collectibleSize, collectibleSize, 60)) {
-                const collectible = { x, y, width: collectibleSize, height: collectibleSize, type };
+                const collectible = { x, y, width: collectibleSize, height: collectibleSize, hitScale: 1.2, type };
                 if (type === 'coin') {
                     collectible.sparkleFrame = 0;
                     collectible.sparkleTimer = 0;
@@ -1479,16 +1542,38 @@ class CatDashGame {
     }
 
     checkCollision(obj1, obj2) {
-        // Center-based AABB collision
-        const o1Left = obj1.x - obj1.width / 2;
-        const o1Right = obj1.x + obj1.width / 2;
-        const o1Top = obj1.y - obj1.height / 2;
-        const o1Bottom = obj1.y + obj1.height / 2;
-        const o2Left = obj2.x - obj2.width / 2;
-        const o2Right = obj2.x + obj2.width / 2;
-        const o2Top = obj2.y - obj2.height / 2;
-        const o2Bottom = obj2.y + obj2.height / 2;
+        // Center-based AABB collision using effective (scaled) hitboxes.
+        // PNG sprites include transparent padding, so we shrink each object's box
+        // to match its visible art (hitScaleX/hitScaleY, or a uniform hitScale).
+        const s1x = obj1.hitScaleX ?? obj1.hitScale ?? 1;
+        const s1y = obj1.hitScaleY ?? obj1.hitScale ?? 1;
+        const s2x = obj2.hitScaleX ?? obj2.hitScale ?? 1;
+        const s2y = obj2.hitScaleY ?? obj2.hitScale ?? 1;
+
+        const o1hw = (obj1.width * s1x) / 2;
+        const o1hh = (obj1.height * s1y) / 2;
+        const o2hw = (obj2.width * s2x) / 2;
+        const o2hh = (obj2.height * s2y) / 2;
+
+        const o1Left = obj1.x - o1hw;
+        const o1Right = obj1.x + o1hw;
+        const o1Top = obj1.y - o1hh;
+        const o1Bottom = obj1.y + o1hh;
+        const o2Left = obj2.x - o2hw;
+        const o2Right = obj2.x + o2hw;
+        const o2Top = obj2.y - o2hh;
+        const o2Bottom = obj2.y + o2hh;
         return o1Left < o2Right && o1Right > o2Left && o1Top < o2Bottom && o1Bottom > o2Top;
+    }
+
+    checkProximity(obj1, obj2) {
+        // Distance-based check between object centers - used where we want objects
+        // to get near each other's center (not just overlap edges) before triggering
+        const dx = obj1.x - obj2.x;
+        const dy = obj1.y - obj2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const threshold = (Math.min(obj1.width, obj1.height) / 2 + Math.min(obj2.width, obj2.height) / 2) * 0.4;
+        return distance < threshold;
     }
 
     createParticles(x, y, color, type = 'default') {
@@ -2064,12 +2149,17 @@ class CatDashGame {
         }
     }
 
-    async handleScoreSubmit(screenType) {
-        const isGameOver = screenType === 'game-over';
-        const nameInput = document.getElementById(isGameOver ? 'player-name-input' : 'clear-player-name-input');
-        const errorEl = document.getElementById(isGameOver ? 'name-error' : 'clear-name-error');
-        const successEl = document.getElementById(isGameOver ? 'name-success' : 'clear-name-success');
-        const submitBtn = document.getElementById(isGameOver ? 'submit-score-button' : 'clear-submit-score-button');
+    async handleScoreSubmit() {
+        // Scores are only submitted from the Game Clear screen (all levels finished).
+        // Hard guard: never save on Game Over or any other state.
+        if (this.state !== 'gameClear') {
+            return;
+        }
+
+        const nameInput = document.getElementById('clear-player-name-input');
+        const errorEl = document.getElementById('clear-name-error');
+        const successEl = document.getElementById('clear-name-success');
+        const submitBtn = document.getElementById('clear-submit-score-button');
         const playerName = nameInput ? nameInput.value : '';
 
         if (this.scoreSubmitted) {
@@ -2110,8 +2200,7 @@ class CatDashGame {
             nameInput.disabled = true;
 
             // Refresh the leaderboard on this screen
-            const tbodyId = isGameOver ? 'end-leaderboard-body' : 'clear-leaderboard-body';
-            this.loadEndScreenLeaderboard(tbodyId);
+            this.loadEndScreenLeaderboard('clear-leaderboard-body');
         } catch (e) {
             console.error('Score submit error:', e);
             errorEl.textContent = 'Save failed: ' + (e.message || 'unknown error');

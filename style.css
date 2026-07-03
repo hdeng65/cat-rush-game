@@ -175,10 +175,135 @@ body::before {
     display: none !important;
 }
 
+#start-screen {
+    background: #ffffff;
+}
+
 .start-content {
-    max-width: 500px;
-    padding: 30px;
+    max-width: 640px;
+    width: 100%;
+    padding: 16px 28px;
     text-align: center;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.start-content .start-title {
+    font-size: 40px;
+    font-weight: 900;
+    color: #2d3436;
+    margin: 0;
+    transform: rotate(-1deg);
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+}
+
+/* Message sits beside the cat animation */
+.start-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+}
+
+/* Hand-drawn speech bubble tagline (tail points right toward the cat) */
+.start-bubble {
+    position: relative;
+    flex: 0 1 260px;
+    font-size: 20px;
+    font-weight: 900;
+    color: #2d3436;
+    line-height: 1.25;
+    padding: 16px 20px;
+    background: #fff;
+    border: 3px solid #2d3436;
+    border-radius: 40% 60% 55% 45% / 55% 45% 60% 40%;
+    transform: rotate(-1.5deg);
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.12);
+}
+
+.start-bubble::after {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 55%;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-top: 3px solid #2d3436;
+    border-right: 3px solid #2d3436;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+/* Cat animation, cropped to remove the transparent padding around the sketch */
+.start-cat {
+    flex: 0 0 auto;
+    width: min(200px, 40%);
+    aspect-ratio: 7 / 10;
+    background-image: url('assets/cat.gif');
+    background-repeat: no-repeat;
+    background-position: 41% 39%;
+    background-size: 400% auto;
+    pointer-events: none;
+    user-select: none;
+}
+
+.start-content #start-button {
+    margin: 0;
+    font-size: 24px;
+    padding: 12px 40px;
+}
+
+/* Action row: leaderboard (left) - START (center) - help (right) */
+.start-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+/* Hand-drawn icon buttons — shared look for leaderboard + ? gameplay button */
+.start-link {
+    margin: 0;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    font-size: 22px;
+    font-weight: 900;
+    font-family: inherit;
+    background: #fff9c4;
+    color: #2d3436;
+    border: 3px solid #2d3436;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.12);
+    letter-spacing: 0;
+    text-transform: none;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 50% 45% 55% 50% / 55% 50% 50% 45%;
+}
+
+.start-link.icon-link {
+    transform: rotate(-3deg);
+}
+
+.start-link.help-link {
+    transform: rotate(3deg);
+}
+
+.start-link:hover {
+    background: #fff59d;
+    color: #2d3436;
+    transform: rotate(0deg) translateY(-2px);
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.18);
+}
+
+.start-link:active {
+    transform: translateY(0);
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.12);
 }
 
 .screen h1 {
@@ -198,9 +323,13 @@ body::before {
 }
 
 .start-instructions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 0;
     text-align: left;
-    margin: 0 0 10px 0;
-    padding: 15px 20px;
+    margin: 0 0 8px 0;
+    padding: 8px 18px;
     background: #f0f4f8;
     border: 2px dashed #2d3436;
     border-radius: 12px 15px 10px 13px / 13px 12px 15px 10px;
@@ -208,18 +337,20 @@ body::before {
 }
 
 .start-instructions p {
-    font-size: 16px;
-    margin: 6px 0;
+    font-size: 13px;
+    margin: 3px 0;
     text-align: left;
+    white-space: nowrap;
 }
 
 .start-instructions .controls {
-    margin-top: 10px;
-    font-size: 14px;
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-size: 12px;
     color: #636e72;
     text-align: center;
     border-top: 1px dashed #b2bec3;
-    padding-top: 8px;
+    padding-top: 4px;
 }
 
 .screen h2 {
@@ -271,8 +402,8 @@ button:active {
 
 #pause-button {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
+    bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    right: calc(15px + env(safe-area-inset-right, 0px));
     padding: 10px 20px;
     font-size: 16px;
     font-weight: 700;
@@ -631,16 +762,33 @@ button:active {
 /* Leaderboard */
 #leaderboard-container,
 .end-leaderboard {
-    margin: 15px 0 0 0;
+    margin: 0;
     text-align: center;
 }
 
 #leaderboard-container h3,
 .end-leaderboard h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 900;
     color: #2d3436;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+}
+
+/* Fixed-size bounding box: shows ~5 rows, scrolls internally for the rest. */
+#leaderboard-scroll {
+    height: 188px;
+    overflow-y: auto;
+    border: 2px solid #2d3436;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0 10px;
+}
+
+#leaderboard-table thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
 }
 
 #leaderboard-table,
@@ -673,10 +821,138 @@ button:active {
     width: 30px;
 }
 
+.leaderboard-note {
+    font-size: 14px;
+    font-style: italic;
+    color: #636e72;
+    margin: 8px 0 4px 0;
+}
+
 .lb-loading {
     text-align: center !important;
     color: #b2bec3;
     font-style: italic;
+}
+
+/* --- Modals (leaderboard / help) --- */
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(45, 52, 54, 0.55);
+}
+
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+.modal-card {
+    position: relative;
+    width: min(420px, 100%);
+    max-height: 85%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 26px 24px 22px;
+    background: #fffef7;
+    border: 3px solid #2d3436;
+    border-radius: 16px 20px 14px 18px / 18px 14px 20px 16px;
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.2);
+    transform: rotate(-0.4deg);
+}
+
+.modal-card h3 {
+    font-size: 24px;
+    font-weight: 900;
+    color: #2d3436;
+    margin: 0 0 14px 0;
+    text-align: center;
+}
+
+.modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    margin: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    font-family: inherit;
+    color: #2d3436;
+    background: none;
+    border: none;
+    box-shadow: none;
+    transform: none;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: none;
+    box-shadow: none;
+    transform: scale(1.15);
+    color: #e67e22;
+}
+
+.help-instructions {
+    text-align: left;
+    padding: 4px 6px;
+}
+
+.help-instructions p {
+    font-size: 16px;
+    margin: 8px 0;
+    text-align: left;
+}
+
+.help-instructions .controls {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #636e72;
+    text-align: center;
+    border-top: 1px dashed #b2bec3;
+    padding-top: 8px;
+}
+
+/* --- Minimal mute icon (no button chrome) --- */
+#mute-button.mute-icon {
+    margin: 0;
+    padding: 2px 4px;
+    font-size: 16px;
+    line-height: 1;
+    font-family: inherit;
+    background: none;
+    border: none;
+    box-shadow: none;
+    transform: none;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+    opacity: 0.85;
+    pointer-events: auto;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+#mute-button.mute-icon:hover {
+    background: none;
+    box-shadow: none;
+    transform: scale(1.15);
+    opacity: 1;
+}
+
+#mute-button.mute-icon:active {
+    transform: scale(1.0);
+    box-shadow: none;
+}
+
+#mute-button.mute-icon.muted {
+    opacity: 0.4;
 }
 
 /* Name prompt */
@@ -781,8 +1057,8 @@ button:active {
 #joystick {
     display: none;
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
     width: 130px;
     height: 130px;
     border-radius: 50%;
@@ -819,7 +1095,8 @@ button:active {
     /* Move pause button to left so it doesn't overlap joystick */
     #pause-button {
         right: auto;
-        left: 15px;
+        left: calc(15px + env(safe-area-inset-left, 0px));
+        bottom: calc(15px + env(safe-area-inset-bottom, 0px));
     }
 }
 
