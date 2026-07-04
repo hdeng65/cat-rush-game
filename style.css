@@ -65,95 +65,227 @@ body::before {
 
 #ui-container {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     width: min(800px, 100vw);
-    padding: 10px 16px;
+    min-height: 70px;
+    padding: 10px 20px;
     background: #fffef7;
     position: relative;
     z-index: 1;
     border-radius: 8px;
 }
 
-#ui-primary {
+/* Left: sound toggle drawn with the sketch speaker asset */
+#mute-button {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    line-height: 0;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.1s;
+}
+
+#mute-button img {
+    height: 42px;
+    width: auto;
+}
+
+#mute-button:hover {
+    background: none;
+    box-shadow: none;
+    transform: scale(1.1);
+}
+
+#mute-button:active {
+    transform: scale(1.0);
+}
+
+/* Center: level title, absolutely centered so side widths don't shift it */
+#level-display {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    white-space: nowrap;
+}
+
+/* Right-side cluster */
+#ui-status {
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 16px;
+    margin-left: auto;
 }
 
-#ui-secondary {
+/* HUD overlaid on the game canvas */
+#canvas-hud {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 14px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Timer chip: hourglass overlapping a tan pill */
+#timer-display {
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: 12px;
-    opacity: 0.7;
 }
 
-/* Primary items — large and prominent */
-#lives-display {
-    font-size: 24px;
+#timer-icon {
+    height: 42px;
+    width: auto;
+    position: relative;
+    z-index: 1;
+}
+
+#timer-pill {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 40px;
+    background: #f6e3c5;
+    border: 2px solid #5d4037;
+    border-radius: 999px;
+    padding: 0 14px 0 30px;
+    margin-left: -24px;
+    font-size: 18px;
     font-weight: 900;
-    color: #c0392b;
-    background: #ffe4e1;
-    padding: 8px 20px;
-    border: 2px solid #2d3436;
-    text-align: center;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-    border-radius: 10px 12px 8px 11px / 11px 10px 12px 8px;
+    color: #5d4037;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
 }
 
+#timer-display.warning #timer-pill {
+    background: #ffccbc;
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+
+/* Treats bubble: big fish overlapping a light blue pill of fish slots */
 #treats-display {
-    font-size: 24px;
-    font-weight: 900;
-    color: #00897b;
-    background: #e0f7fa;
-    padding: 8px 20px;
-    border: 2px solid #2d3436;
-    text-align: center;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-    border-radius: 10px 12px 8px 11px / 11px 10px 12px 8px;
-    transition: background 0.3s, color 0.3s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 40px;
+    background: #eaf7fd;
+    border: 2px solid #a8dff0;
+    border-radius: 999px;
+    padding: 0 14px 0 24px;
+    margin-left: 20px;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+#treats-big-fish {
+    position: absolute;
+    left: -22px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 42px;
+    width: auto;
+}
+
+#treats-slots {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.treat-slot {
+    height: 20px;
+    width: auto;
+    opacity: 0.3;
+    filter: grayscale(60%);
+    transition: opacity 0.2s, filter 0.2s;
+}
+
+.treat-slot.filled {
+    opacity: 1;
+    filter: none;
 }
 
 #treats-display.complete {
-    background: #c8e6c9;
-    color: #2e7d32;
+    background: #d9f2e3;
+    border-color: #58d68d;
 }
 
+/* Lives pill: big cat head overlapping a white pill of small heads */
+#lives-display {
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 40px;
+    background: #ffffff;
+    border: 3px solid #1a1a1a;
+    border-radius: 999px;
+    padding: 0 14px 0 15px;
+    margin-left: 34px;
+}
+
+#lives-big-head {
+    position: absolute;
+    left: -33px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 45px;
+    width: auto;
+}
+
+#lives-heads {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.life-head {
+    height: 20px;
+    width: auto;
+    transition: filter 0.3s, opacity 0.3s;
+}
+
+.life-head.lost {
+    filter: brightness(0);
+    opacity: 0.85;
+}
+
+/* Score pill: coin overlapping an orange pill */
 #score-display {
-    font-size: 24px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 40px;
+    background: #f8c471;
+    border: 3px solid #e67e22;
+    border-radius: 999px;
+    padding: 0 15px 0 30px;
+    margin-left: 20px;
+    font-size: 21px;
     font-weight: 900;
-    color: #e67e22;
-    background: #fff9e6;
-    padding: 8px 20px;
-    border: 2px solid #2d3436;
-    text-align: center;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-    border-radius: 10px 12px 8px 11px / 11px 10px 12px 8px;
+    color: #ca6f1e;
 }
 
-/* Secondary items — smaller and muted */
-#timer-display,
-#level-display,
-#coins-display {
-    font-size: 14px;
-    font-weight: 700;
-    color: #636e72;
-    background: #f5f6fa;
-    padding: 4px 12px;
-    border: 1px solid #b2bec3;
-    text-align: center;
-    border-radius: 8px;
-    transition: background 0.3s, color 0.3s;
-}
-
-#timer-display.warning {
-    background: #ffccbc;
-    color: #d32f2f;
-    border-color: #d32f2f;
-    opacity: 1;
-    font-weight: 900;
+#score-coin {
+    position: absolute;
+    left: -22px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 46px;
+    width: auto;
 }
 
 .screen {
@@ -588,37 +720,44 @@ button:active {
     z-index: 1;
 }
 
-/* Scaled, bottom-aligned background animations (no modal card) */
-#fail-anim-try-again,
-#success-anim-level-clear {
-    top: auto;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 200px;
+/* In-flow screen animation shown above the message text */
+.screen-anim {
+    width: 240px;
+    height: 240px;
     object-fit: contain;
-    opacity: 1;
+    display: block;
+    margin: 0 auto 20px;
 }
 
-/* Try Again Screen - animation background, no modal card */
-#try-again-screen {
-    padding-bottom: 220px;
+/* Wrapper so the fail obstacle can overlap the animation */
+.screen-anim-wrap {
+    position: relative;
+    width: 240px;
+    margin: 0 auto 20px;
 }
 
-/* Obstacle that triggered the fail, overlapping the bottom 50px of the animation */
+.screen-anim-wrap .screen-anim {
+    margin: 0;
+}
+
+/* Obstacle that triggered the fail, overlapping the bottom of the animation */
 #fail-obstacle-try-again {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    bottom: 0;
     width: 90px;
     height: 90px;
     object-fit: contain;
-    /* Animation is 200px tall, anchored at bottom:0. Sit the obstacle on the
-       floor so its top ~50px overlaps the animation's bottom 50px band. */
-    bottom: 0;
-    z-index: 1;
     pointer-events: none;
+}
+
+.screen-message {
+    font-size: 26px;
+    font-weight: 700;
+    color: #2d3436;
+    line-height: 1.45;
+    margin: 0 0 30px;
 }
 
 .try-again-content {
@@ -628,11 +767,6 @@ button:active {
     padding: 0;
 }
 
-.try-again-content h2,
-.try-again-content .lives-message {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
-}
-
 /* Level Clear Screen */
 #level-clear-screen {
     background: #fffef7;
@@ -640,7 +774,6 @@ button:active {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 220px;
 }
 
 .level-clear-content {
@@ -649,23 +782,6 @@ button:active {
     box-shadow: none;
     padding: 0;
     text-align: center;
-}
-
-.level-clear-content h2 {
-    font-size: 36px;
-    font-weight: 900;
-    color: #00b894;
-    margin-bottom: 30px;
-    transform: rotate(-0.3deg);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
-}
-
-.level-clear-message {
-    font-size: 24px;
-    font-weight: 700;
-    color: #2d3436;
-    margin: 25px 0;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.4);
 }
 
 /* Game Over Screen - Hand-drawn Style */
@@ -920,41 +1036,6 @@ button:active {
     padding-top: 8px;
 }
 
-/* --- Minimal mute icon (no button chrome) --- */
-#mute-button.mute-icon {
-    margin: 0;
-    padding: 2px 4px;
-    font-size: 16px;
-    line-height: 1;
-    font-family: inherit;
-    background: none;
-    border: none;
-    box-shadow: none;
-    transform: none;
-    letter-spacing: 0;
-    text-transform: none;
-    cursor: pointer;
-    opacity: 0.85;
-    pointer-events: auto;
-    transition: opacity 0.15s, transform 0.1s;
-}
-
-#mute-button.mute-icon:hover {
-    background: none;
-    box-shadow: none;
-    transform: scale(1.15);
-    opacity: 1;
-}
-
-#mute-button.mute-icon:active {
-    transform: scale(1.0);
-    box-shadow: none;
-}
-
-#mute-button.mute-icon.muted {
-    opacity: 0.4;
-}
-
 /* Name prompt */
 .name-prompt {
     margin: 15px 0;
@@ -1100,22 +1181,90 @@ button:active {
     }
 }
 
+/* Narrow screens: level title gets its own row so it can't collide
+   with the pills (the one-row layout needs ~750px) */
+@media (max-width: 750px) {
+    #ui-container {
+        flex-wrap: wrap;
+        row-gap: 2px;
+    }
+    #level-display {
+        position: static;
+        transform: none;
+        order: -1;
+        width: 100%;
+        text-align: center;
+        font-size: 22px;
+    }
+}
+
 /* Mobile-friendly UI scaling */
 @media (max-width: 600px) {
-    #lives-display,
-    #treats-display,
-    #score-display {
-        font-size: 18px;
-        padding: 6px 12px;
-    }
     #ui-container {
-        padding: 6px 8px;
+        padding: 6px 10px;
+        min-height: 54px;
     }
-    #ui-primary {
-        gap: 8px;
+    #ui-status {
+        gap: 10px;
     }
-    #ui-secondary {
-        gap: 6px;
+    #level-display {
+        font-size: 20px;
+    }
+    #mute-button img {
+        height: 32px;
+    }
+    /* Canvas HUD scaling */
+    #canvas-hud {
+        top: 8px;
+        padding: 0 10px;
+    }
+    #timer-icon {
+        height: 32px;
+    }
+    #timer-pill {
+        height: 32px;
+        font-size: 14px;
+        padding: 0 10px 0 24px;
+        margin-left: -19px;
+    }
+    #treats-display {
+        height: 32px;
+        padding: 0 10px 0 18px;
+        margin-left: 16px;
+    }
+    #treats-big-fish {
+        left: -17px;
+        height: 32px;
+    }
+    .treat-slot {
+        height: 15px;
+    }
+    #treats-slots {
+        gap: 4px;
+    }
+    #lives-display {
+        height: 32px;
+        padding: 0 11px 0 14px;
+        margin-left: 27px;
+        border-width: 2px;
+    }
+    #lives-big-head {
+        left: -26px;
+        height: 37px;
+    }
+    .life-head {
+        height: 17px;
+    }
+    #score-display {
+        height: 32px;
+        padding: 0 12px 0 26px;
+        margin-left: 16px;
+        font-size: 17px;
+        border-width: 2px;
+    }
+    #score-coin {
+        left: -17px;
+        height: 38px;
     }
 }
 
