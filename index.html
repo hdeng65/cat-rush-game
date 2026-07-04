@@ -14,21 +14,40 @@
 <body>
     <!-- UI Elements - Outside Canvas -->
     <div id="ui-container">
-        <div id="ui-primary">
-            <div id="lives-display">❤️ <span id="lives-value">3</span></div>
-            <div id="treats-display">🐟 <span id="treats-value">0</span>/<span id="treats-needed">5</span></div>
-            <div id="score-display">⭐ <span id="score-value">0</span></div>
-        </div>
-        <div id="ui-secondary">
-            <div id="timer-display">⏱️ <span id="timer-value">30</span>s</div>
-            <div id="level-display">Lv.<span id="level-value">1</span></div>
-            <div id="coins-display">🪙 <span id="coins-value">0</span></div>
-            <button id="mute-button" class="mute-icon" aria-label="Toggle music" title="Toggle music">🔊</button>
+        <button id="mute-button" aria-label="Toggle music" title="Toggle music">
+            <img id="mute-button-img" src="assets/UI/UI_Elements_sound_on.png" alt="Sound">
+        </button>
+        <div id="level-display">Level <span id="level-value">1</span></div>
+        <div id="ui-status">
+            <div id="lives-display" aria-label="Lives">
+                <img src="assets/UI/Cat-head.png" alt="" id="lives-big-head">
+                <span id="lives-heads">
+                    <img src="assets/UI/Cat-head.png" alt="" class="life-head">
+                    <img src="assets/UI/Cat-head.png" alt="" class="life-head">
+                    <img src="assets/UI/Cat-head.png" alt="" class="life-head">
+                </span>
+            </div>
+            <div id="score-display">
+                <img src="assets/coin/coin-1.png" alt="" id="score-coin">
+                <span id="score-value">0</span>
+            </div>
         </div>
     </div>
     
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+
+        <!-- HUD overlaid on the canvas -->
+        <div id="canvas-hud">
+            <div id="timer-display">
+                <img src="assets/UI/UI_Elements_hourglass.png" alt="" id="timer-icon">
+                <span id="timer-pill"><span id="timer-value">30</span>s</span>
+            </div>
+            <div id="treats-display" aria-label="Treats collected">
+                <img src="assets/fish/fish-1.png" alt="" id="treats-big-fish">
+                <span id="treats-slots"></span>
+            </div>
+        </div>
 
         <!-- Start Screen -->
         <div id="start-screen" class="screen" style="display: flex;">
@@ -48,11 +67,12 @@
 
         <!-- Try Again Screen -->
         <div id="try-again-screen" class="screen hidden" style="display: none !important;">
-            <img class="screen-bg-anim" id="fail-anim-try-again" src="" alt="">
-            <img id="fail-obstacle-try-again" src="" alt="" style="display: none;">
             <div class="try-again-content">
-                <h2>You lost a life</h2>
-                <p class="lives-message">Lives Left: <span id="lives-left">3</span></p>
+                <div class="screen-anim-wrap">
+                    <img class="screen-anim" id="fail-anim-try-again" src="" alt="">
+                    <img id="fail-obstacle-try-again" src="" alt="" style="display: none;">
+                </div>
+                <p class="screen-message">Cat pooped outside<br>and lost a life</p>
                 <div class="try-again-buttons">
                     <button id="yes-button" class="try-again-btn">Try Again</button>
                     <button id="exit-button" class="try-again-btn">Exit</button>
@@ -62,10 +82,9 @@
 
         <!-- Level Clear Screen -->
         <div id="level-clear-screen" class="screen hidden" style="display: none !important;">
-            <img class="screen-bg-anim" id="success-anim-level-clear" src="" alt="">
             <div class="level-clear-content">
-                <h2>Level Clear!</h2>
-                <p class="level-clear-message">Level <span id="level-clear-number">1</span> complete!</p>
+                <img class="screen-anim" id="success-anim-level-clear" src="" alt="">
+                <p class="screen-message">Cat pooped properly!<br>Good cat!</p>
                 <div class="try-again-buttons">
                     <button id="next-level-button" class="try-again-btn">Next Level</button>
                 </div>
