@@ -41,6 +41,7 @@ class CatDashGame {
                 baseSpeed: 1.0,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.3,
+                jumpingCatDensity: 0.1,
                 spawnInterval: 400,
                 collectibleSpawnInterval: 350,
                 shieldSpawnRate: 0.4,
@@ -53,6 +54,7 @@ class CatDashGame {
                 baseSpeed: 1.3,
                 obstacleSizes: ['small'],
                 obstacleDensity: 0.4,
+                jumpingCatDensity: 0.2,
                 spawnInterval: 350,
                 collectibleSpawnInterval: 300,
                 shieldSpawnRate: 0.4,
@@ -63,9 +65,10 @@ class CatDashGame {
             },
             3: {
                 timeLimit: 60000,
-                baseSpeed: 1.6,
+                baseSpeed: 1.9,
                 obstacleSizes: ['small', 'medium'],
                 obstacleDensity: 0.7,
+                jumpingCatDensity: 0.3,
                 spawnInterval: 350,
                 collectibleSpawnInterval: 250,
                 shieldSpawnRate: 0.3,
@@ -90,6 +93,7 @@ class CatDashGame {
             portalFrames: [],
             sparkleFrames: [],
             roombaFrames: [],
+            jumpingCatFrames: [],
             coinFrames: [],
             fishFrames: [],
             shieldFrames: [],
@@ -223,6 +227,13 @@ class CatDashGame {
             ];
         }
 
+        for (let i = 1; i <= 5; i++) {
+            imagePaths[`jumpingCatFrame${i}`] = [
+                `assets/jumping cat/Hopping_Cat-${i}.png`,
+                `assets/jumping cat/Hopping_Cat-${i}.PNG`
+            ];
+        }
+
         for (let i = 1; i <= 4; i++) {
             imagePaths[`portalFrame${i}`] = [
                 `assets/portal/Portal-${i}.png`,
@@ -255,6 +266,7 @@ class CatDashGame {
         this.images.catFrames = [];
         this.images.catAfterPortalFrames = [];
         this.images.roombaFrames = [];
+        this.images.jumpingCatFrames = [];
         this.images.sparkleFrames = [];
         this.images.portalFrames = [];
         this.images.coinFrames = [];
@@ -300,6 +312,9 @@ class CatDashGame {
                 } else if (key.startsWith('roombaFrame')) {
                     const frameNum = parseInt(key.replace('roombaFrame', ''));
                     this.images.roombaFrames[frameNum - 1] = img;
+                } else if (key.startsWith('jumpingCatFrame')) {
+                    const frameNum = parseInt(key.replace('jumpingCatFrame', ''));
+                    this.images.jumpingCatFrames[frameNum - 1] = img;
                 } else if (key.startsWith('portalFrame')) {
                     const frameNum = parseInt(key.replace('portalFrame', ''));
                     this.images.portalFrames[frameNum - 1] = img;
@@ -905,6 +920,9 @@ class CatDashGame {
         if (obstacle.type === 'roomba') {
             const frame = this.images.roombaFrames && this.images.roombaFrames[0];
             if (frame) src = frame.src;
+        } else if (obstacle.type === 'jumpingCat') {
+            const frame = this.images.jumpingCatFrames && this.images.jumpingCatFrames[0];
+            if (frame) src = frame.src;
         } else {
             const size = obstacle.size || 'medium';
             const key = size === 'small' ? 'obstacleSmall' : size === 'big' ? 'obstacleBig' : 'obstacleMedium';
@@ -1223,6 +1241,21 @@ class CatDashGame {
                         obstacle.direction *= -1;
                     }
                 }
+            } else if (obstacle.type === 'jumpingCat') {
+                const frames = this.images.jumpingCatFrames;
+                const frameCount = (frames && frames.length) || 5;
+                const frameMs = 90;
+                obstacle.animationTimer += deltaTime;
+                if (obstacle.animationTimer >= frameMs) {
+                    obstacle.animationTimer -= frameMs;
+                    if (frames && frames.length > 0) {
+                        obstacle.animationFrame = (obstacle.animationFrame + 1) % frames.length;
+                    }
+                }
+                // Vertical bob synced to one full animation loop (one arc per cycle)
+                const period = frameCount * frameMs;
+                obstacle.hopTimer = (obstacle.hopTimer + deltaTime) % period;
+                obstacle.hopOffset = -Math.sin((obstacle.hopTimer / period) * Math.PI) * 18;
             }
 
             if (obstacle.y < -50) {
@@ -1401,7 +1434,22 @@ class CatDashGame {
             const x = lane * this.player.laneWidth + this.player.laneWidth / 2;
             const y = this.canvas.height + 50;
 
-            if (this.currentLevel >= 2 && Math.random() < 0.2) {
+            const jumpingCatDensity = config.jumpingCatDensity || 0;
+            if (Math.random() < jumpingCatDensity) {
+                const jSize = { width: laneWidth * 0.7, height: laneWidth * 0.7 };
+                const jx = lane * this.player.laneWidth + this.player.laneWidth / 2;
+                if (!this.checkOverlap(jx, y, jSize.width, jSize.height, 80)) {
+                    this.obstacles.push({
+                        x: jx, y,
+                        width: jSize.width, height: jSize.height,
+                        hitScale: 0.7,
+                        type: 'jumpingCat', size: 'medium',
+                        animationTimer: 0, animationFrame: 0,
+                        hopTimer: 0, hopOffset: 0
+                    });
+                    spawned = true;
+                }
+            } else if (this.currentLevel >= 2 && Math.random() < 0.2) {
                 const size = { width: 100, height: 100 };
                 if (!this.checkOverlap(x, y, size.width, size.height, 80)) {
                     const startLane = lane;
@@ -1956,6 +2004,21 @@ class CatDashGame {
                 this.ctx.fillStyle = '#2d3436';
                 this.ctx.beginPath();
                 this.ctx.arc(obstacle.x, obstacle.y, obstacle.width / 4, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        } else if (obstacle.type === 'jumpingCat') {
+            const frames = this.images.jumpingCatFrames;
+            const hop = obstacle.hopOffset || 0;
+            const frame = frames && frames[obstacle.animationFrame];
+            if (frame && frame.complete) {
+                this.ctx.drawImage(frame,
+                    obstacle.x - obstacle.width / 2,
+                    obstacle.y - obstacle.height / 2 + hop,
+                    obstacle.width, obstacle.height);
+            } else {
+                this.ctx.fillStyle = '#e17055';
+                this.ctx.beginPath();
+                this.ctx.arc(obstacle.x, obstacle.y + hop, obstacle.width / 2, 0, Math.PI * 2);
                 this.ctx.fill();
             }
         } else {
