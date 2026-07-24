@@ -39,7 +39,7 @@ class CatDashGame {
             1: {
                 timeLimit: 60000,
                 baseSpeed: 1.0,
-                obstacleSizes: ['small'],
+                obstacleSizes: ['small', 'small', 'small', 'medium'],
                 obstacleDensity: 0.3,
                 jumpingCatDensity: 0.1,
                 spawnInterval: 400,
@@ -52,7 +52,7 @@ class CatDashGame {
             2: {
                 timeLimit: 60000,
                 baseSpeed: 1.3,
-                obstacleSizes: ['small'],
+                obstacleSizes: ['small', 'small', 'small', 'medium'],
                 obstacleDensity: 0.4,
                 jumpingCatDensity: 0.2,
                 spawnInterval: 350,
@@ -89,6 +89,8 @@ class CatDashGame {
             obstacleSmall: null,
             obstacleMedium: null,
             obstacleBig: null,
+            obstacleSmallFrames: [],
+            obstacleMediumFrames: [],
             shieldEffect: null,
             portalFrames: [],
             sparkleFrames: [],
@@ -226,8 +228,22 @@ class CatDashGame {
 
         for (let i = 1; i <= 4; i++) {
             imagePaths[`roombaFrame${i}`] = [
-                `assets/roomba/roomba${i}.PNG`,
-                `assets/roomba/roomba${i}.png`
+                `assets/update_crab cat/Crab_Cat-${i}.png`,
+                `assets/update_crab cat/Crab_Cat-${i}.PNG`
+            ];
+        }
+
+        for (let i = 1; i <= 4; i++) {
+            imagePaths[`obstacleSmallFrame${i}`] = [
+                `assets/update_small obstacles/Small_Obstacle-${i}.png`,
+                `assets/update_small obstacles/Small_Obstacle-${i}.PNG`
+            ];
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            imagePaths[`obstacleMediumFrame${i}`] = [
+                `assets/update_medium obstacles/Stretch_Cat-${i}.png`,
+                `assets/update_medium obstacles/Stretch_Cat-${i}.PNG`
             ];
         }
 
@@ -278,6 +294,8 @@ class CatDashGame {
         this.images.shieldFrames = [];
         this.images.failFrames = [];
         this.images.successFrames = [];
+        this.images.obstacleSmallFrames = [];
+        this.images.obstacleMediumFrames = [];
 
         for (let i = 1; i <= 12; i++) {
             const img = new Image();
@@ -331,6 +349,12 @@ class CatDashGame {
                 } else if (key.startsWith('shieldFrame')) {
                     const frameNum = parseInt(key.replace('shieldFrame', ''));
                     this.images.shieldFrames[frameNum - 1] = img;
+                } else if (key.startsWith('obstacleSmallFrame')) {
+                    const frameNum = parseInt(key.replace('obstacleSmallFrame', ''));
+                    this.images.obstacleSmallFrames[frameNum - 1] = img;
+                } else if (key.startsWith('obstacleMediumFrame')) {
+                    const frameNum = parseInt(key.replace('obstacleMediumFrame', ''));
+                    this.images.obstacleMediumFrames[frameNum - 1] = img;
                 } else {
                     this.images[key] = img;
                 }
@@ -937,8 +961,14 @@ class CatDashGame {
             if (frame) src = frame.src;
         } else {
             const size = obstacle.size || 'medium';
-            const key = size === 'small' ? 'obstacleSmall' : size === 'big' ? 'obstacleBig' : 'obstacleMedium';
-            if (this.images[key]) src = this.images[key].src;
+            const framesKey = size === 'small' ? 'obstacleSmallFrames' : 'obstacleMediumFrames';
+            const frames = this.images[framesKey];
+            if (frames && frames[0]) {
+                src = frames[0].src;
+            } else {
+                const key = size === 'small' ? 'obstacleSmall' : size === 'big' ? 'obstacleBig' : 'obstacleMedium';
+                if (this.images[key]) src = this.images[key].src;
+            }
         }
 
         if (src) {
@@ -1268,6 +1298,18 @@ class CatDashGame {
                 const period = frameCount * frameMs;
                 obstacle.hopTimer = (obstacle.hopTimer + deltaTime) % period;
                 obstacle.hopOffset = -Math.sin((obstacle.hopTimer / period) * Math.PI) * 18;
+            } else {
+                if (!obstacle.animationTimer) obstacle.animationTimer = 0;
+                if (!obstacle.animationFrame) obstacle.animationFrame = 0;
+                obstacle.animationTimer += deltaTime;
+                const frameMs = obstacle.size === 'medium' ? 143 : 120;
+                if (obstacle.animationTimer >= frameMs) {
+                    obstacle.animationTimer = 0;
+                    const frames = obstacle.size === 'small' ? this.images.obstacleSmallFrames : this.images.obstacleMediumFrames;
+                    if (frames && frames.length > 0) {
+                        obstacle.animationFrame = (obstacle.animationFrame + 1) % frames.length;
+                    }
+                }
             }
 
             if (obstacle.y < -50) {
@@ -1433,8 +1475,8 @@ class CatDashGame {
         const types = ['box', 'basket', 'furniture'];
         const laneWidth = this.player.laneWidth;
         const sizeTypes = {
-            small: { width: laneWidth * 0.4, height: laneWidth * 0.4 },
-            medium: { width: laneWidth * 0.6, height: laneWidth * 0.6 },
+            small: { width: laneWidth * 0.8, height: laneWidth * 0.8 },
+            medium: { width: laneWidth * 0.72, height: laneWidth * 0.72 },
             big: { width: laneWidth * 0.95, height: laneWidth * 0.95 }
         };
 
@@ -1491,7 +1533,8 @@ class CatDashGame {
                         width: size.width, height: size.height,
                         hitScale: 0.8,
                         type: types[Math.floor(Math.random() * types.length)],
-                        size: sizeType
+                        size: sizeType,
+                        animationFrame: 0, animationTimer: 0
                     });
                     spawned = true;
                 }
@@ -2061,20 +2104,24 @@ class CatDashGame {
             }
         } else {
             const size = obstacle.size || 'medium';
-            const imageKey = size === 'small' ? 'obstacleSmall' : size === 'big' ? 'obstacleBig' : 'obstacleMedium';
+            const framesKey = size === 'small' ? 'obstacleSmallFrames' : 'obstacleMediumFrames';
+            const frames = this.images[framesKey];
 
-            if (this.images[imageKey] && this.imagesLoaded) {
+            if (frames && frames.length > 0 && obstacle.animationFrame !== undefined) {
+                const frame = frames[obstacle.animationFrame];
                 let shakeX = 0, shakeY = 0;
                 if (size === 'small' || size === 'medium') {
                     shakeX = Math.sin(this.gameTime / 50 + obstacle.x * 0.1) * 2;
                     shakeY = Math.cos(this.gameTime / 60 + obstacle.y * 0.1) * 1;
                 }
-                this.ctx.drawImage(
-                    this.images[imageKey],
-                    obstacle.x - obstacle.width / 2 + shakeX,
-                    obstacle.y - obstacle.height / 2 + shakeY,
-                    obstacle.width, obstacle.height
-                );
+                if (frame && frame.complete) {
+                    this.ctx.drawImage(
+                        frame,
+                        obstacle.x - obstacle.width / 2 + shakeX,
+                        obstacle.y - obstacle.height / 2 + shakeY,
+                        obstacle.width, obstacle.height
+                    );
+                }
             } else {
                 this.ctx.strokeStyle = '#000000';
                 this.ctx.lineWidth = size === 'big' ? 4 : size === 'medium' ? 3 : 2;
